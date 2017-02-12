@@ -37,10 +37,10 @@ import java.util.List;
 
 class AppPicker extends AsyncTask<Void, Integer, Void> {
 
-    private ProgressDialog progress;
     private final Context a;
-    private List<AppData> apps;
     private final AppPickListener listener;
+    private ProgressDialog progress;
+    private List<AppData> apps;
     private Dialog dialog;
 
     AppPicker(final Context c, final AppPickListener l) {
@@ -70,7 +70,8 @@ class AppPicker extends AsyncTask<Void, Integer, Void> {
         dialog = new Dialog(a);
         RecyclerView mRecyclerView = new RecyclerView(a);
         mRecyclerView.setHasFixedSize(true);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(a, LinearLayoutManager.VERTICAL, false));
+        mRecyclerView
+                .setLayoutManager(new LinearLayoutManager(a, LinearLayoutManager.VERTICAL, false));
         RecyclerView.Adapter mAdapter = new AppAdapter();
         mRecyclerView.setAdapter(mAdapter);
         dialog.setContentView(mRecyclerView);
@@ -110,7 +111,8 @@ class AppPicker extends AsyncTask<Void, Integer, Void> {
                     PackageInfo pi = apps.get(i);
                     d = apps.get(i).applicationInfo.loadIcon(pm);
                     d.setBounds(0, 0, Util.dpToPx(a, 25), Util.dpToPx(a, 25));
-                    this.apps.add(new AppData(pi.applicationInfo.loadLabel(pm).toString(), pi.packageName, d));
+                    this.apps.add(new AppData(pi.applicationInfo.loadLabel(pm).toString(),
+                            pi.packageName, d));
                 }
             } catch (OutOfMemoryError oom) {
             }

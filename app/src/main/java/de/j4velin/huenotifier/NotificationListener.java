@@ -26,10 +26,16 @@ import android.service.notification.StatusBarNotification;
 
 public class NotificationListener extends NotificationListenerService {
 
+    private final static long TIME_THRESHOLD = 1000;
     private static boolean ignoreOnGoing = true, ignoreLowPriority = true;
     private long lastTime = 0L;
     private String lastPackage = null;
-    private final static long TIME_THRESHOLD = 1000;
+
+    static void loadValues(final Context c) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
+        ignoreOnGoing = prefs.getBoolean("ignoreOnGoing", true);
+        ignoreLowPriority = prefs.getBoolean("ignoreLowPriority", true);
+    }
 
     @Override
     public IBinder onBind(final Intent mIntent) {
@@ -37,12 +43,6 @@ public class NotificationListener extends NotificationListenerService {
                 .putBoolean("listenerEnabled", true).apply();
         loadValues(this);
         return super.onBind(mIntent);
-    }
-
-    static void loadValues(final Context c) {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
-        ignoreOnGoing = prefs.getBoolean("ignoreOnGoing", true);
-        ignoreLowPriority = prefs.getBoolean("ignoreLowPriority", true);
     }
 
     @Override
@@ -60,13 +60,15 @@ public class NotificationListener extends NotificationListenerService {
     @Override
     public void onNotificationPosted(final StatusBarNotification notification) {
         if (!notification.getPackageName().equals("android")
-                && (!ignoreLowPriority || notification.getNotification().priority > Notification.PRIORITY_MIN)
+                && (!ignoreLowPriority || notification
+                .getNotification().priority > Notification.PRIORITY_MIN)
                 && (!ignoreOnGoing || !notification.isOngoing())) {
             long current = System.currentTimeMillis();
             String pkg = notification.getPackageName();
             if (current - lastTime < TIME_THRESHOLD && lastPackage.equals(pkg)) {
                 if (BuildConfig.DEBUG)
-                    android.util.Log.d(MainActivity.TAG, "ignore duplicate notification from " + pkg);
+                    android.util.Log
+                            .d(MainActivity.TAG, "ignore duplicate notification from " + pkg);
                 return;
             }
             lastTime = current;
@@ -76,7 +78,9 @@ public class NotificationListener extends NotificationListenerService {
             Database db = Database.getInstance(this);
             if (db.contains(lastPackage)) {
                 String pattern = db.getPattern(lastPackage);
-                startService(new Intent(this, ColorFlashService.class).putExtra("lights", Util.getLights(pattern)).putExtra("colors", Util.getColors(pattern)));
+                startService(new Intent(this, ColorFlashService.class)
+                        .putExtra("lights", Util.getLights(pattern))
+                        .putExtra("colors", Util.getColors(pattern)));
             }
             db.close();
         }

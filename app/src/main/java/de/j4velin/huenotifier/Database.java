@@ -27,11 +27,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 class Database extends SQLiteOpenHelper {
 
-    private static final int DATABASE_VERSION = 1;
-    private static Database instance;
     final static String PATTERN_DELIMITER = "@";
-
+    private static final int DATABASE_VERSION = 1;
     private static final AtomicInteger openCounter = new AtomicInteger();
+    private static Database instance;
 
     private Database(final Context context) {
         super(context, "apps", null, DATABASE_VERSION);
@@ -102,7 +101,8 @@ class Database extends SQLiteOpenHelper {
         List<MainActivity.Rule> rules = new ArrayList<>(c.getCount());
         if (c.moveToFirst()) {
             do {
-                rules.add(new MainActivity.Rule(c.getString(0), c.getString(1), Util.toIntArray(c.getString(2)), Util.toIntArray(c.getString(3))));
+                rules.add(new MainActivity.Rule(c.getString(0), c.getString(1),
+                        Util.toIntArray(c.getString(2)), Util.toIntArray(c.getString(3))));
             } while (c.moveToNext());
         }
         c.close();
@@ -111,10 +111,12 @@ class Database extends SQLiteOpenHelper {
 
     MainActivity.Rule getRule(final String pkg) {
         Cursor c = this.getReadableDatabase()
-                .rawQuery("SELECT name, package, lights, colors FROM apps WHERE package = ?", new String[]{pkg});
+                .rawQuery("SELECT name, package, lights, colors FROM apps WHERE package = ?",
+                        new String[]{pkg});
         MainActivity.Rule rule = null;
         if (c.moveToFirst()) {
-            rule = new MainActivity.Rule(c.getString(0), c.getString(1), Util.toIntArray(c.getString(2)), Util.toIntArray(c.getString(3)));
+            rule = new MainActivity.Rule(c.getString(0), c.getString(1),
+                    Util.toIntArray(c.getString(2)), Util.toIntArray(c.getString(3)));
         }
         c.close();
         return rule;

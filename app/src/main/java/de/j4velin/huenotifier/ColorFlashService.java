@@ -37,27 +37,27 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ColorFlashService extends IntentService {
 
+    private final static int ALERT_STATE_DURATION = 1000; // in ms
+    private final List<Integer> changing_lights = new LinkedList<>();
     private HueAPI api;
-
     public ColorFlashService() {
         super("ColorFlashService");
     }
-
-    private final List<Integer> changing_lights = new LinkedList<>();
-    private final static int ALERT_STATE_DURATION = 1000; // in ms
 
     @Override
     protected void onHandleIntent(final Intent intent) {
         SharedPreferences prefs = getSharedPreferences("HueNotifier", MODE_PRIVATE);
         if (!prefs.contains("bridge_ip") || !prefs.contains("username")) {
             if (BuildConfig.DEBUG)
-                android.util.Log.e(MainActivity.TAG, "ColorFlashService started but no bridge connection information found");
+                android.util.Log.e(MainActivity.TAG,
+                        "ColorFlashService started but no bridge connection information found");
             stopSelf();
         } else {
             if (intent != null && intent.hasExtra("colors") && intent.hasExtra("lights")) {
                 Gson gson = new GsonBuilder().setLenient().create();
                 Retrofit retrofit = new Retrofit.Builder()
-                        .baseUrl("http://" + prefs.getString("bridge_ip", null) + "/api/" + prefs.getString("username", null) + "/")
+                        .baseUrl("http://" + prefs.getString("bridge_ip", null) + "/api/" + prefs
+                                .getString("username", null) + "/")
                         .addConverterFactory(GsonConverterFactory.create(gson))
                         .build();
                 api = retrofit.create(HueAPI.class);
@@ -76,7 +76,8 @@ public class ColorFlashService extends IntentService {
                     }).start();
                 }
             } else if (BuildConfig.DEBUG) {
-                android.util.Log.e(MainActivity.TAG, "ColorFlashService started but intent does not have necessary information");
+                android.util.Log.e(MainActivity.TAG,
+                        "ColorFlashService started but intent does not have necessary information");
             }
         }
     }
@@ -104,28 +105,39 @@ public class ColorFlashService extends IntentService {
                         PHUtilities.calculateXY(color, response.body().modelid);
                 api.setLightState(light, alertState).enqueue(new Callback<List<JsonElement>>() {
                     @Override
-                    public void onResponse(Call<List<JsonElement>> call, Response<List<JsonElement>> response) {
+                    public void onResponse(Call<List<JsonElement>> call,
+                                           Response<List<JsonElement>> response) {
                         if (BuildConfig.DEBUG)
-                            android.util.Log.d(MainActivity.TAG, "set alert state response: " + Arrays.toString(response.body().toArray()));
+                            android.util.Log.d(MainActivity.TAG,
+                                    "set alert state response: " + Arrays
+                                            .toString(response.body().toArray()));
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
-                                api.setLightState(light, currentState).enqueue(new Callback<List<JsonElement>>() {
-                                    @Override
-                                    public void onResponse(Call<List<JsonElement>> call, Response<List<JsonElement>> response) {
-                                        if (BuildConfig.DEBUG)
-                                            android.util.Log.d(MainActivity.TAG, "revert state response: " + Arrays.toString(response.body().toArray()));
-                                        done(light);
-                                    }
+                                api.setLightState(light, currentState)
+                                        .enqueue(new Callback<List<JsonElement>>() {
+                                            @Override
+                                            public void onResponse(Call<List<JsonElement>> call,
+                                                                   Response<List<JsonElement>> response) {
+                                                if (BuildConfig.DEBUG)
+                                                    android.util.Log.d(MainActivity.TAG,
+                                                            "revert state response: " + Arrays
+                                                                    .toString(response.body()
+                                                                            .toArray()));
+                                                done(light);
+                                            }
 
-                                    @Override
-                                    public void onFailure(Call<List<JsonElement>> call, Throwable t) {
-                                        if (BuildConfig.DEBUG)
-                                            android.util.Log.e(MainActivity.TAG, "can not revert to original state: " + t.getMessage());
-                                        t.printStackTrace();
-                                        done(light);
-                                    }
-                                });
+                                            @Override
+                                            public void onFailure(Call<List<JsonElement>> call,
+                                                                  Throwable t) {
+                                                if (BuildConfig.DEBUG)
+                                                    android.util.Log.e(MainActivity.TAG,
+                                                            "can not revert to original state: " + t
+                                                                    .getMessage());
+                                                t.printStackTrace();
+                                                done(light);
+                                            }
+                                        });
                             }
                         }, ALERT_STATE_DURATION);
                     }
@@ -133,7 +145,8 @@ public class ColorFlashService extends IntentService {
                     @Override
                     public void onFailure(Call<List<JsonElement>> call, Throwable t) {
                         if (BuildConfig.DEBUG)
-                            android.util.Log.e(MainActivity.TAG, "can not change to alert state: " + t.getMessage());
+                            android.util.Log.e(MainActivity.TAG,
+                                    "can not change to alert state: " + t.getMessage());
                         t.printStackTrace();
                         done(light);
                     }
@@ -143,7 +156,8 @@ public class ColorFlashService extends IntentService {
             @Override
             public void onFailure(Call<Light> call, Throwable t) {
                 if (BuildConfig.DEBUG)
-                    android.util.Log.e(MainActivity.TAG, "can not get current state: " + t.getMessage());
+                    android.util.Log
+                            .e(MainActivity.TAG, "can not get current state: " + t.getMessage());
                 t.printStackTrace();
             }
         });
