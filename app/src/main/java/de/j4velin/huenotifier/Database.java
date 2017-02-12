@@ -22,13 +22,14 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 class Database extends SQLiteOpenHelper {
 
     final static String PATTERN_DELIMITER = "@";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
     private static final AtomicInteger openCounter = new AtomicInteger();
     private static Database instance;
 
@@ -53,11 +54,15 @@ class Database extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(final SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE apps (name TEXT, package TEXT, lights TEXT, colors TEXT);");
+        db.execSQL(
+                "CREATE TABLE apps (name TEXT, package TEXT, person TEXT, lights TEXT, colors TEXT);");
     }
 
     @Override
     public void onUpgrade(final SQLiteDatabase db, int oldVersion, int newVersion) {
+        if (oldVersion == 1) {
+            db.execSQL("ALTER TABLE apps ADD COLUMN person TEXT;");
+        }
     }
 
     boolean contains(final String pkg) {
@@ -68,55 +73,70 @@ class Database extends SQLiteOpenHelper {
         return re;
     }
 
-    long insert(final String name, final String pkg, final String lights, final String colors) {
+    long insert(final String name, final String pkg, final String person, final String lights,
+                final String colors) {
         if (contains(pkg)) {
             return -1;
         }
         final ContentValues values = new ContentValues();
         values.put("name", name);
         values.put("package", pkg);
+        values.put("person", person);
         values.put("lights", lights);
         values.put("colors", colors);
         return this.getWritableDatabase().insert("apps", null, values);
     }
 
-    String getPattern(final String pkg) {
+    String getPattern(final String pkg, final Collection<String> people) {
         Cursor c = this.getReadableDatabase()
-                .rawQuery("SELECT lights, colors FROM apps WHERE package = ?", new String[]{pkg});
+                .rawQuery(
+                        "SELECT person, lights, colors FROM apps WHERE package = ?",
+                        new String[]{pkg});
         String re = null;
         if (c.moveToFirst()) {
-            re = c.getString(0) + PATTERN_DELIMITER + c.getString(1);
+            for (int i = 0; i < c.getCount(); i++) {
+                String person = c.getString(0);
+                if (person == null && re == null) {
+                    re = c.getString(1) + PATTERN_DELIMITER + c.getString(2);
+                } else if (people.contains(person)) {
+                    re = c.getString(1) + PATTERN_DELIMITER + c.getString(2);
+                    break;
+                }
+                c.moveToNext();
+            }
         }
         c.close();
         return re;
     }
 
-    void delete(final String pkg) {
-        getWritableDatabase().delete("apps", "package = ?", new String[]{pkg});
+    void delete(final String pkg, final String person) {
+        getWritableDatabase().delete("apps", "package = ? AND person = ?",
+                new String[]{pkg, person});
     }
 
     List<MainActivity.Rule> getRules() {
         Cursor c = this.getReadableDatabase()
-                .rawQuery("SELECT name, package, lights, colors FROM apps", null);
+                .rawQuery("SELECT name, package, person, lights, colors FROM apps", null);
         List<MainActivity.Rule> rules = new ArrayList<>(c.getCount());
         if (c.moveToFirst()) {
             do {
-                rules.add(new MainActivity.Rule(c.getString(0), c.getString(1),
-                        Util.toIntArray(c.getString(2)), Util.toIntArray(c.getString(3))));
+                rules.add(new MainActivity.Rule(c.getString(0), c.getString(1), c.getString(2),
+                        Util.toIntArray(c.getString(3)), Util.toIntArray(c.getString(4))));
             } while (c.moveToNext());
         }
         c.close();
         return rules;
     }
 
-    MainActivity.Rule getRule(final String pkg) {
+    MainActivity.Rule getRule(final String pkg, final String person) {
         Cursor c = this.getReadableDatabase()
-                .rawQuery("SELECT name, package, lights, colors FROM apps WHERE package = ?",
-                        new String[]{pkg});
+                .rawQuery(
+                        "SELECT name, package, person, lights, colors FROM apps WHERE package = ? AND person = ?",
+                        new String[]{pkg, person});
         MainActivity.Rule rule = null;
         if (c.moveToFirst()) {
-            rule = new MainActivity.Rule(c.getString(0), c.getString(1),
-                    Util.toIntArray(c.getString(2)), Util.toIntArray(c.getString(3)));
+            rule = new MainActivity.Rule(c.getString(0), pkg, person,
+                    Util.toIntArray(c.getString(3)), Util.toIntArray(c.getString(4)));
         }
         c.close();
         return rule;

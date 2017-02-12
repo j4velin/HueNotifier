@@ -46,6 +46,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -302,8 +303,22 @@ public class MainActivity extends AppCompatActivity {
                 List<PHLight> lights = phHueSDK.getSelectedBridge().getResourceCache()
                         .getAllLights();
                 final List<CheckBox> checkBoxes = new ArrayList<CheckBox>(lights.size());
-                LinearLayout linearLayout = new LinearLayout(MainActivity.this);
-                linearLayout.setOrientation(LinearLayout.VERTICAL);
+
+                View v = getLayoutInflater().inflate(R.layout.rule_add, null);
+                TextView appName = (TextView) v.findViewById(R.id.app);
+                appName.setText(app.name);
+
+                TextView person = (TextView) v.findViewById(R.id.person);
+                Spinner people = (Spinner) v.findViewById(R.id.people);
+                if (Build.VERSION.SDK_INT >= 19 && BuildConfig.DEBUG) {
+                    // TODO: fill spinner
+                } else {
+                    person.setVisibility(View.GONE);
+                    people.setVisibility(View.GONE);
+                }
+
+                LinearLayout linearLayout = (LinearLayout) v.findViewById(R.id.lights);
+
                 int id = 1;
                 for (PHLight light : lights) {
                     final CheckBox cb = new CheckBox(MainActivity.this);
@@ -332,14 +347,15 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
                                 dialog.show();
+                            } else {
+                                cb.setTextColor(Color.WHITE);
                             }
                         }
                     });
                     linearLayout.addView(cb);
                     checkBoxes.add(cb);
                 }
-                new AlertDialog.Builder(MainActivity.this).setView(linearLayout)
-                        .setTitle("Select lights").
+                new AlertDialog.Builder(MainActivity.this).setView(v).
                         setPositiveButton(android.R.string.ok,
                                 new DialogInterface.OnClickListener() {
                                     @Override
@@ -361,8 +377,8 @@ public class MainActivity extends AppCompatActivity {
                                         }
                                         dialogInterface.dismiss();
                                         Database db = Database.getInstance(MainActivity.this);
-                                        db.insert(app.name, app.pkg, lights, colors);
-                                        rules.add(db.getRule(app.pkg));
+                                        db.insert(app.name, app.pkg, null, lights, colors);
+                                        rules.add(db.getRule(app.pkg, null));
                                         db.close();
                                         ruleAdapter.notifyDataSetChanged();
                                     }
@@ -456,13 +472,14 @@ public class MainActivity extends AppCompatActivity {
 
     static class Rule {
         private final int[] lights, colors;
-        private final String appName, appPkg;
+        private final String appName, appPkg, person;
 
-        Rule(String appName, String appPkg, int[] lights, int[] colors) {
+        Rule(String appName, String appPkg, String person, int[] lights, int[] colors) {
             this.lights = lights;
             this.colors = colors;
             this.appName = appName;
             this.appPkg = appPkg;
+            this.person = person;
         }
     }
 
@@ -503,7 +520,7 @@ public class MainActivity extends AppCompatActivity {
                 Rule r = rules.remove(itemPosition);
                 ruleAdapter.notifyItemRemoved(itemPosition);
                 Database db = Database.getInstance(MainActivity.this);
-                db.delete(r.appPkg);
+                db.delete(r.appPkg, r.person);
                 db.close();
             }
         };
