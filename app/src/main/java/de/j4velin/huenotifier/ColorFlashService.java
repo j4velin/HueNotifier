@@ -35,22 +35,23 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class ConnectionService extends IntentService {
+public class ColorFlashService extends IntentService {
 
     private HueAPI api;
 
-    public ConnectionService() {
+    public ColorFlashService() {
         super("ColorFlashService");
     }
 
     private final List<Integer> changing_lights = new LinkedList<>();
+    private final static int ALERT_STATE_DURATION = 1000; // in ms
 
     @Override
     protected void onHandleIntent(final Intent intent) {
         SharedPreferences prefs = getSharedPreferences("HueNotifier", MODE_PRIVATE);
         if (!prefs.contains("bridge_ip") || !prefs.contains("username")) {
             if (BuildConfig.DEBUG)
-                android.util.Log.e(MainActivity.TAG, "ConnectionService started but no bridge connection information found");
+                android.util.Log.e(MainActivity.TAG, "ColorFlashService started but no bridge connection information found");
             stopSelf();
         } else {
             if (intent != null && intent.hasExtra("colors") && intent.hasExtra("lights")) {
@@ -75,7 +76,7 @@ public class ConnectionService extends IntentService {
                     }).start();
                 }
             } else if (BuildConfig.DEBUG) {
-                android.util.Log.e(MainActivity.TAG, "ConnectionService started but intent does not have necessary information");
+                android.util.Log.e(MainActivity.TAG, "ColorFlashService started but intent does not have necessary information");
             }
         }
     }
@@ -105,7 +106,7 @@ public class ConnectionService extends IntentService {
                     @Override
                     public void onResponse(Call<List<JsonElement>> call, Response<List<JsonElement>> response) {
                         if (BuildConfig.DEBUG)
-                            android.util.Log.d(MainActivity.TAG, "response2: " + Arrays.toString(response.body().toArray()));
+                            android.util.Log.d(MainActivity.TAG, "set alert state response: " + Arrays.toString(response.body().toArray()));
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
@@ -113,26 +114,26 @@ public class ConnectionService extends IntentService {
                                     @Override
                                     public void onResponse(Call<List<JsonElement>> call, Response<List<JsonElement>> response) {
                                         if (BuildConfig.DEBUG)
-                                            android.util.Log.d(MainActivity.TAG, "response3: " + Arrays.toString(response.body().toArray()));
+                                            android.util.Log.d(MainActivity.TAG, "revert state response: " + Arrays.toString(response.body().toArray()));
                                         done(light);
                                     }
 
                                     @Override
                                     public void onFailure(Call<List<JsonElement>> call, Throwable t) {
                                         if (BuildConfig.DEBUG)
-                                            android.util.Log.e(MainActivity.TAG, "failure in: " + t.getMessage());
+                                            android.util.Log.e(MainActivity.TAG, "can not revert to original state: " + t.getMessage());
                                         t.printStackTrace();
                                         done(light);
                                     }
                                 });
                             }
-                        }, 1000);
+                        }, ALERT_STATE_DURATION);
                     }
 
                     @Override
                     public void onFailure(Call<List<JsonElement>> call, Throwable t) {
                         if (BuildConfig.DEBUG)
-                            android.util.Log.e(MainActivity.TAG, "failure out: " + t.getMessage());
+                            android.util.Log.e(MainActivity.TAG, "can not change to alert state: " + t.getMessage());
                         t.printStackTrace();
                         done(light);
                     }
@@ -142,7 +143,7 @@ public class ConnectionService extends IntentService {
             @Override
             public void onFailure(Call<Light> call, Throwable t) {
                 if (BuildConfig.DEBUG)
-                    android.util.Log.e(MainActivity.TAG, "failure: " + t.getMessage());
+                    android.util.Log.e(MainActivity.TAG, "can not get current state: " + t.getMessage());
                 t.printStackTrace();
             }
         });

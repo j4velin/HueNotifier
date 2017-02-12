@@ -76,7 +76,7 @@ public class NotificationListener extends NotificationListenerService {
             Database db = Database.getInstance(this);
             if (db.contains(lastPackage)) {
                 String pattern = db.getPattern(lastPackage);
-                startService(new Intent(this, ConnectionService.class).putExtra("lights", Util.getLights(pattern)).putExtra("colors", Util.getColors(pattern)));
+                startService(new Intent(this, ColorFlashService.class).putExtra("lights", Util.getLights(pattern)).putExtra("colors", Util.getColors(pattern)));
             }
             db.close();
         }

@@ -458,7 +458,7 @@ public class MainActivity extends AppCompatActivity {
                 if (isConnected) {
                     View cardView = (View) editView.getParent();
                     final int itemPosition = ruleList.getChildLayoutPosition(cardView);
-                    startService(new Intent(MainActivity.this, ConnectionService.class).
+                    startService(new Intent(MainActivity.this, ColorFlashService.class).
                             putExtra("lights", rules.get(itemPosition).lights).putExtra("colors", rules.get(itemPosition).colors));
                 } else {
                     Snackbar.make(findViewById(android.R.id.content), "Not connected to hue bridge", Snackbar.LENGTH_SHORT).show();
