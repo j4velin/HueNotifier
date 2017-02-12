@@ -297,6 +297,8 @@ public class MainActivity extends AppCompatActivity {
                                         cb.setTextColor(color);
                                         tag[1] = color;
                                         cb.setTag(tag);
+                                        startService(new Intent(MainActivity.this, ColorFlashService.class)
+                                                .putExtra("lights", new int[]{tag[0]}).putExtra("colors", new int[]{color}));
                                     }
                                 });
                                 dialog.show();
