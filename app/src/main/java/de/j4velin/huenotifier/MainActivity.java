@@ -15,6 +15,7 @@
  */
 package de.j4velin.huenotifier;
 
+import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.Dialog;
@@ -32,6 +33,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.PermissionChecker;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -83,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
             // Handle your bridge search results here.  Typically if multiple results are returned you will want to display them in a list
             // and let the user select their bridge.   If one is found you may opt to connect automatically to that bridge.
             if (BuildConfig.DEBUG)
-                android.util.Log.d(TAG, "onAccessPointsFound");
+                Logger.log("onAccessPointsFound");
             handler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -133,8 +135,7 @@ public class MainActivity extends AppCompatActivity {
                     LIGHT_TO_MODEL[i + 1] = lights.get(i).getModelNumber();
                 }
                 if (BuildConfig.DEBUG)
-                    android.util.Log
-                            .d(TAG, "Light cache updated: " + Arrays.toString(LIGHT_TO_NAME));
+                    Logger.log("Light cache updated: " + Arrays.toString(LIGHT_TO_NAME));
                 phHueSDK.disableHeartbeat(bridge);
                 handler.post(new Runnable() {
                     @Override
@@ -159,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
                     b.getResourceCache().getBridgeConfiguration().getIpAddress());
             edit.putString("username", username);
             edit.apply();
-            if (BuildConfig.DEBUG) android.util.Log.d(TAG, "Connected to: " + b);
+            if (BuildConfig.DEBUG) Logger.log("Connected to: " + b);
             handler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -212,12 +213,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onConnectionResumed(final PHBridge b) {
-            if (BuildConfig.DEBUG) android.util.Log.d(TAG, "Connection resumed to: " + b);
+            if (BuildConfig.DEBUG) Logger.log("Connection resumed to: " + b);
         }
 
         @Override
         public void onConnectionLost(PHAccessPoint accessPoint) {
-            if (BuildConfig.DEBUG) android.util.Log.d(TAG, "connection lost");
+            if (BuildConfig.DEBUG) Logger.log("connection lost");
             // Here you would handle the loss of connection to your bridge.
             handler.post(new Runnable() {
                 @Override
@@ -232,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onError(int code, final String message) {
             // Here you can handle events such as Bridge Not Responding, Authentication Failed and Bridge Not Found
-            if (BuildConfig.DEBUG) android.util.Log.e(TAG, "Error: " + message + " - " + code);
+            if (BuildConfig.DEBUG) Logger.log("Error: " + message + " - " + code);
         }
 
         @Override
@@ -256,7 +257,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void setConnected(boolean connected) {
         if (BuildConfig.DEBUG)
-            android.util.Log.d(TAG, "setConnected: " + connected);
+            Logger.log("setConnected: " + connected);
         isConnected = connected;
         fadeView(connected, findViewById(R.id.fab));
         if (!connected) {
@@ -269,6 +270,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
+
+        if (BuildConfig.DEBUG && Build.VERSION.SDK_INT >= 23 && PermissionChecker
+                .checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                PermissionChecker.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
+        }
 
         phHueSDK.setAppName("HueNotifier");
         phHueSDK.setDeviceName(android.os.Build.MODEL);
@@ -404,7 +411,7 @@ public class MainActivity extends AppCompatActivity {
                     .getSDKService(PHHueSDK.SEARCH_BRIDGE);
             sm.search(true, true);
             if (BuildConfig.DEBUG)
-                android.util.Log.d(TAG, "searching for bridges");
+                Logger.log("searching for bridges");
         } else {
             PHAccessPoint accessPoint = new PHAccessPoint();
             accessPoint.setIpAddress(prefs.getString("bridge_ip", null));

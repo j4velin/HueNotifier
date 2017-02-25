@@ -70,8 +70,7 @@ public class NotificationListener extends NotificationListenerService {
             String pkg = notification.getPackageName();
             if (current - lastTime < TIME_THRESHOLD && lastPackage.equals(pkg)) {
                 if (BuildConfig.DEBUG)
-                    android.util.Log
-                            .d(MainActivity.TAG, "ignore duplicate notification from " + pkg);
+                    Logger.log("ignore duplicate notification from " + pkg);
                 return;
             }
             lastTime = current;
@@ -82,7 +81,7 @@ public class NotificationListener extends NotificationListenerService {
                         .getNotification().extras.getStringArrayList(Notification.EXTRA_PEOPLE);
             }
             if (BuildConfig.DEBUG)
-                android.util.Log.d(MainActivity.TAG,
+                Logger.log(
                         "received notification from " + lastPackage + ", people=" + people);
             Database db = Database.getInstance(this);
             if (db.contains(lastPackage)) {
