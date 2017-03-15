@@ -68,7 +68,6 @@ import de.j4velin.lib.colorpicker.ColorPickerDialog;
 
 public class MainActivity extends AppCompatActivity {
 
-    public final static String TAG = "HueNotifier";
     private static String[] LIGHT_TO_NAME;
     private static String[] LIGHT_TO_MODEL;
     private final PHHueSDK phHueSDK = PHHueSDK.getInstance();
@@ -90,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
                     connectDialog.dismiss();
+                    if (isConnected) return; // no idea how that can happen, but it seems to do
                     if (accessPoint.isEmpty()) {
                         Snackbar.make(findViewById(android.R.id.content), "No hue bridge found",
                                 Snackbar.LENGTH_LONG).show();
