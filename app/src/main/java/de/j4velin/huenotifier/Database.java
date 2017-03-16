@@ -81,7 +81,8 @@ class Database extends SQLiteOpenHelper {
         final ContentValues values = new ContentValues();
         values.put("name", name);
         values.put("package", pkg);
-        values.put("person", person);
+        if (person != null)
+            values.put("person", person);
         values.put("lights", lights);
         values.put("colors", colors);
         return this.getWritableDatabase().insert("apps", null, values);
@@ -110,8 +111,14 @@ class Database extends SQLiteOpenHelper {
     }
 
     void delete(final String pkg, final String person) {
-        getWritableDatabase().delete("apps", "package = ? AND person = ?",
-                new String[]{pkg, person});
+        if (person != null)
+            getWritableDatabase().delete("apps",
+                    "package = ? AND person = ?",
+                    new String[]{pkg, person});
+        else
+            getWritableDatabase().delete("apps",
+                    "package = ?",
+                    new String[]{pkg});
     }
 
     List<MainActivity.Rule> getRules() {
@@ -129,10 +136,16 @@ class Database extends SQLiteOpenHelper {
     }
 
     MainActivity.Rule getRule(final String pkg, final String person) {
-        Cursor c = this.getReadableDatabase()
+        Cursor c;
+        if (person != null)
+            c = this.getReadableDatabase()
+                    .rawQuery(
+                            "SELECT name, package, person, lights, colors FROM apps WHERE package = ? AND person = ?",
+                            new String[]{pkg, person});
+        else c = this.getReadableDatabase()
                 .rawQuery(
-                        "SELECT name, package, person, lights, colors FROM apps WHERE package = ? AND person = ?",
-                        new String[]{pkg, person});
+                        "SELECT name, package, person, lights, colors FROM apps WHERE package = ?",
+                        new String[]{pkg});
         MainActivity.Rule rule = null;
         if (c.moveToFirst()) {
             rule = new MainActivity.Rule(c.getString(0), pkg, person,
