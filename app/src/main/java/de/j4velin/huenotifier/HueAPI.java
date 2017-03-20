@@ -18,6 +18,7 @@ package de.j4velin.huenotifier;
 import com.google.gson.JsonElement;
 
 import java.util.List;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
@@ -33,4 +34,6 @@ public interface HueAPI {
     @PUT("lights/{id}/state")
     Call<List<JsonElement>> setLightState(@Path("id") int id, @Body Light.LightState state);
 
+    @GET("lights")
+    Call<Map<String, Light>> getLights();
 }

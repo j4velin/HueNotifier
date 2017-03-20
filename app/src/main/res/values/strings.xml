@@ -74,4 +74,12 @@
     <string name="pref_ringtone_silent">Silent</string>
 
     <string name="pref_title_vibrate">Vibrate</string>
+    <string name="no_bridge_found">No hue bridge found</string>
+    <string name="select_bridge">Select hue bridge</string>
+    <string name="connection_lost">Connection lost</string>
+    <string name="not_connected">Not connected</string>
+    <string name="could_not_get_lights">Could not get connected lights: %s</string>
+    <string name="searching_bridge">Searching for hue bridge...</string>
+    <string name="permission_required">You need to grant the app notification access</string>
+    <string name="grant_access">Grant access</string>
 </resources>

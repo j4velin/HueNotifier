@@ -31,6 +31,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.PermissionChecker;
@@ -63,8 +64,12 @@ import com.philips.lighting.model.PHLight;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import de.j4velin.lib.colorpicker.ColorPickerDialog;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -72,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
     private static String[] LIGHT_TO_MODEL;
     private final PHHueSDK phHueSDK = PHHueSDK.getInstance();
     private final Handler handler = new Handler();
+    private Map<String, Light> lights;
     private List<Rule> rules;
     private RecyclerView.Adapter ruleAdapter;
     private RecyclerView ruleList;
@@ -91,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
                     connectDialog.dismiss();
                     if (isConnected) return; // no idea how that can happen, but it seems to do
                     if (accessPoint.isEmpty()) {
-                        Snackbar.make(findViewById(android.R.id.content), "No hue bridge found",
+                        Snackbar.make(findViewById(android.R.id.content), R.string.no_bridge_found,
                                 Snackbar.LENGTH_LONG).show();
                     } else if (accessPoint.size() == 1) {
                         phHueSDK.connect(accessPoint.get(0));
@@ -100,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
                         linearLayout.setOrientation(LinearLayout.VERTICAL);
                         final Dialog d =
                                 new AlertDialog.Builder(MainActivity.this)
-                                        .setTitle("Select hue bridge").setView(linearLayout)
+                                        .setTitle(R.string.select_bridge).setView(linearLayout)
                                         .create();
                         int padding = Util.dpToPx(MainActivity.this, 10);
                         for (final PHAccessPoint ap : accessPoint) {
@@ -223,7 +229,8 @@ public class MainActivity extends AppCompatActivity {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
-                    Snackbar.make(findViewById(R.id.root), "Connection lost", Snackbar.LENGTH_SHORT)
+                    Snackbar.make(findViewById(R.id.root), R.string.connection_lost,
+                            Snackbar.LENGTH_SHORT)
                             .show();
                     setConnected(false);
                 }
@@ -259,10 +266,35 @@ public class MainActivity extends AppCompatActivity {
         if (BuildConfig.DEBUG)
             Logger.log("setConnected: " + connected);
         isConnected = connected;
-        fadeView(connected, findViewById(R.id.fab));
         if (!connected) {
-            ((TextView) findViewById(R.id.bridgeinfo)).setText("Not connected");
+            ((TextView) findViewById(R.id.bridgeinfo)).setText(R.string.not_connected);
+            fadeView(false, findViewById(R.id.fab));
+        } else {
+            getLights();
         }
+    }
+
+    private void getLights() {
+        HueAPI api = ColorFlashService.getAPI(
+                getSharedPreferences("HueNotifier", MODE_PRIVATE));
+        api.getLights().enqueue(
+                new Callback<Map<String, Light>>() {
+                    @Override
+                    public void onResponse(Call<Map<String, Light>> call,
+                                           Response<Map<String, Light>> response) {
+                        lights = response.body();
+                        fadeView(true, findViewById(R.id.fab));
+                    }
+
+                    @Override
+                    public void onFailure(Call<Map<String, Light>> call, Throwable t) {
+                        if (BuildConfig.DEBUG) Logger.log(t);
+                        Snackbar.make(findViewById(android.R.id.content),
+                                getString(R.string.could_not_get_lights, t.getMessage()),
+                                Snackbar.LENGTH_LONG).show();
+                        fadeView(false, findViewById(R.id.fab));
+                    }
+                });
     }
 
     @Override
@@ -304,100 +336,108 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void addRule() {
-        new AppPicker(MainActivity.this, new AppPicker.AppPickListener() {
-            @Override
-            public void appSelected(final AppPicker.AppData app) {
-                List<PHLight> lights = phHueSDK.getSelectedBridge().getResourceCache()
-                        .getAllLights();
-                final List<CheckBox> checkBoxes = new ArrayList<CheckBox>(lights.size());
+        if (lights == null) {
+            getLights();
+            Snackbar.make(findViewById(android.R.id.content),
+                    "No lights found yet - please wait...",
+                    Snackbar.LENGTH_LONG).show();
+        } else {
+            new AppPicker(MainActivity.this, new AppPicker.AppPickListener() {
+                @Override
+                public void appSelected(final AppPicker.AppData app) {
 
-                View v = getLayoutInflater().inflate(R.layout.rule_add, null);
-                TextView appName = (TextView) v.findViewById(R.id.app);
-                appName.setText(app.name);
+                    final List<CheckBox> checkBoxes = new ArrayList<CheckBox>(lights.size());
 
-                TextView person = (TextView) v.findViewById(R.id.person);
-                Spinner people = (Spinner) v.findViewById(R.id.people);
-                if (Build.VERSION.SDK_INT >= 19 && BuildConfig.DEBUG) {
-                    // TODO: fill spinner
-                } else {
-                    person.setVisibility(View.GONE);
-                    people.setVisibility(View.GONE);
-                }
+                    View v = getLayoutInflater().inflate(R.layout.rule_add, null);
+                    TextView appName = (TextView) v.findViewById(R.id.app);
+                    appName.setText(app.name);
 
-                LinearLayout linearLayout = (LinearLayout) v.findViewById(R.id.lights);
+                    TextView person = (TextView) v.findViewById(R.id.person);
+                    Spinner people = (Spinner) v.findViewById(R.id.people);
+                    if (Build.VERSION.SDK_INT >= 19 && BuildConfig.DEBUG) {
+                        // TODO: fill spinner
+                    } else {
+                        person.setVisibility(View.GONE);
+                        people.setVisibility(View.GONE);
+                    }
 
-                int id = 1;
-                for (PHLight light : lights) {
-                    final CheckBox cb = new CheckBox(MainActivity.this);
-                    cb.setText(light.getName());
-                    final int[] tag = new int[2];
-                    tag[0] = id++;
-                    cb.setTag(tag);
-                    cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                        @Override
-                        public void onCheckedChanged(CompoundButton compoundButton,
-                                                     boolean isChecked) {
-                            if (isChecked) {
-                                ColorPickerDialog dialog = new ColorPickerDialog(MainActivity.this,
-                                        Color.WHITE);
-                                dialog.setOnColorChangedListener(
-                                        new ColorPickerDialog.OnColorChangedListener() {
-                                            @Override
-                                            public void onColorChanged(int color) {
-                                                cb.setTextColor(color);
-                                                tag[1] = color;
-                                                cb.setTag(tag);
-                                                startService(new Intent(MainActivity.this,
-                                                        ColorFlashService.class)
-                                                        .putExtra("lights", new int[]{tag[0]})
-                                                        .putExtra("colors", new int[]{color}));
-                                            }
-                                        });
-                                dialog.show();
-                            } else {
-                                cb.setTextColor(Color.WHITE);
+                    LinearLayout linearLayout = (LinearLayout) v.findViewById(R.id.lights);
+
+                    for (Map.Entry<String, Light> entry : lights.entrySet()) {
+                        Light light = entry.getValue();
+                        final CheckBox cb = new CheckBox(MainActivity.this);
+                        cb.setText(light.name);
+                        final int[] tag = new int[2];
+                        tag[0] = Integer.valueOf(entry.getKey());
+                        cb.setTag(tag);
+                        cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                            @Override
+                            public void onCheckedChanged(CompoundButton compoundButton,
+                                                         boolean isChecked) {
+                                if (isChecked) {
+                                    ColorPickerDialog dialog = new ColorPickerDialog(
+                                            MainActivity.this,
+                                            Color.WHITE);
+                                    dialog.setOnColorChangedListener(
+                                            new ColorPickerDialog.OnColorChangedListener() {
+                                                @Override
+                                                public void onColorChanged(int color) {
+                                                    cb.setTextColor(color);
+                                                    tag[1] = color;
+                                                    cb.setTag(tag);
+                                                    startService(new Intent(MainActivity.this,
+                                                            ColorFlashService.class)
+                                                            .putExtra("lights", new int[]{tag[0]})
+                                                            .putExtra("colors", new int[]{color}));
+                                                }
+                                            });
+                                    dialog.show();
+                                } else {
+                                    cb.setTextColor(Color.WHITE);
+                                }
                             }
-                        }
-                    });
-                    linearLayout.addView(cb);
-                    checkBoxes.add(cb);
-                }
-                new AlertDialog.Builder(MainActivity.this).setView(v).
-                        setPositiveButton(android.R.string.ok,
-                                new DialogInterface.OnClickListener() {
-                                    @Override
-                                    public void onClick(DialogInterface dialogInterface, int i) {
-                                        String lights = null;
-                                        String colors = null;
-                                        for (CheckBox cb : checkBoxes) {
-                                            if (cb.isChecked()) {
-                                                if (lights == null) {
-                                                    lights = String
-                                                            .valueOf(((int[]) cb.getTag())[0]);
-                                                    colors = String
-                                                            .valueOf(((int[]) cb.getTag())[1]);
-                                                } else {
-                                                    lights += "," + ((int[]) cb.getTag())[0];
-                                                    colors += "," + ((int[]) cb.getTag())[1];
+                        });
+                        linearLayout.addView(cb);
+                        checkBoxes.add(cb);
+                    }
+                    new AlertDialog.Builder(MainActivity.this).setView(v).
+                            setPositiveButton(android.R.string.ok,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialogInterface,
+                                                            int i) {
+                                            String lights = null;
+                                            String colors = null;
+                                            for (CheckBox cb : checkBoxes) {
+                                                if (cb.isChecked()) {
+                                                    if (lights == null) {
+                                                        lights = String
+                                                                .valueOf(((int[]) cb.getTag())[0]);
+                                                        colors = String
+                                                                .valueOf(((int[]) cb.getTag())[1]);
+                                                    } else {
+                                                        lights += "," + ((int[]) cb.getTag())[0];
+                                                        colors += "," + ((int[]) cb.getTag())[1];
+                                                    }
                                                 }
                                             }
+                                            dialogInterface.dismiss();
+                                            Database db = Database.getInstance(MainActivity.this);
+                                            db.insert(app.name, app.pkg, null, lights, colors);
+                                            rules.add(db.getRule(app.pkg, null));
+                                            db.close();
+                                            ruleAdapter.notifyDataSetChanged();
                                         }
-                                        dialogInterface.dismiss();
-                                        Database db = Database.getInstance(MainActivity.this);
-                                        db.insert(app.name, app.pkg, null, lights, colors);
-                                        rules.add(db.getRule(app.pkg, null));
-                                        db.close();
-                                        ruleAdapter.notifyDataSetChanged();
-                                    }
-                                }).setNegativeButton(android.R.string.cancel,
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                dialogInterface.cancel();
-                            }
-                        }).create().show();
-            }
-        }).execute();
+                                    }).setNegativeButton(android.R.string.cancel,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    dialogInterface.cancel();
+                                }
+                            }).create().show();
+                }
+            }).execute();
+        }
     }
 
     private void connectToBridge() {
@@ -405,7 +445,7 @@ public class MainActivity extends AppCompatActivity {
         if (!prefs.contains("bridge_ip") || !prefs.contains("username")) {
             // setup
             connectDialog = new ProgressDialog(this);
-            connectDialog.setTitle("Searching for hue bridge...");
+            connectDialog.setTitle(R.string.searching_bridge);
             connectDialog.show();
             PHBridgeSearchManager sm = (PHBridgeSearchManager) phHueSDK
                     .getSDKService(PHHueSDK.SEARCH_BRIDGE);
@@ -429,14 +469,14 @@ public class MainActivity extends AppCompatActivity {
                 getSharedPreferences("NotificationListener", Context.MODE_PRIVATE)
                         .getBoolean("listenerEnabled", false);
         if (!listenerEnabled) {
-            Snackbar.make(findViewById(R.id.root), "You need to grant the app notification access",
+            Snackbar.make(findViewById(R.id.root), R.string.permission_required,
                     Snackbar.LENGTH_INDEFINITE)
-                    .setAction("Grant access", new View.OnClickListener() {
+                    .setAction(R.string.grant_access, new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
                             try {
                                 startActivity(new Intent(
-                                        android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+                                        Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
                             } catch (ActivityNotFoundException anf) {
                                 Toast.makeText(MainActivity.this,
                                         "Notification Listener setting not found, please manually search in the Android settings apps",
@@ -513,7 +553,7 @@ public class MainActivity extends AppCompatActivity {
                             putExtra("lights", rules.get(itemPosition).lights)
                             .putExtra("colors", rules.get(itemPosition).colors));
                 } else {
-                    Snackbar.make(findViewById(android.R.id.content), "Not connected to hue bridge",
+                    Snackbar.make(findViewById(android.R.id.content), R.string.not_connected,
                             Snackbar.LENGTH_SHORT).show();
                 }
                 fadeView(false, editView);
