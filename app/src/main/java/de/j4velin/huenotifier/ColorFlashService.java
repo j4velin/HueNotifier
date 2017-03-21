@@ -20,7 +20,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Handler;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.philips.lighting.hue.sdk.utilities.PHUtilities;
 
@@ -28,13 +27,9 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ColorFlashService extends IntentService {
 
@@ -56,7 +51,7 @@ public class ColorFlashService extends IntentService {
             stopSelf();
         } else {
             if (intent != null && intent.hasExtra("colors") && intent.hasExtra("lights")) {
-                api = getAPI(prefs);
+                api = APIHelper.getAPI(prefs);
                 int[] colors = intent.getIntArrayExtra("colors");
                 int[] lights = intent.getIntArrayExtra("lights");
                 int size = Math.min(colors.length, lights.length);
@@ -184,27 +179,5 @@ public class ColorFlashService extends IntentService {
             changing_lights.remove(light);
             changing_lights.notifyAll();
         }
-    }
-
-    public static HueAPI getAPI(final SharedPreferences prefs) {
-        Retrofit.Builder retrofitBuilder = new Retrofit.Builder();
-        if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor(
-                    new HttpLoggingInterceptor.Logger() {
-                        @Override
-                        public void log(String message) {
-                            Logger.log(message);
-                        }
-                    });
-            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-            retrofitBuilder.client(new OkHttpClient.Builder().addInterceptor(interceptor)
-                    .build());
-        }
-        retrofitBuilder.baseUrl(
-                "http://" + prefs.getString("bridge_ip", null) + "/api/" + prefs
-                        .getString("username", null) + "/")
-                .addConverterFactory(GsonConverterFactory
-                        .create(new GsonBuilder().setLenient().create()));
-        return retrofitBuilder.build().create(HueAPI.class);
     }
 }

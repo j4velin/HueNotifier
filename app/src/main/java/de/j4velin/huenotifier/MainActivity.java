@@ -59,10 +59,8 @@ import com.philips.lighting.hue.sdk.PHHueSDK;
 import com.philips.lighting.hue.sdk.PHSDKListener;
 import com.philips.lighting.model.PHBridge;
 import com.philips.lighting.model.PHHueParsingError;
-import com.philips.lighting.model.PHLight;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -71,10 +69,10 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import static de.j4velin.huenotifier.R.layout.rule;
+
 public class MainActivity extends AppCompatActivity {
 
-    private static String[] LIGHT_TO_NAME;
-    private static String[] LIGHT_TO_MODEL;
     private final PHHueSDK phHueSDK = PHHueSDK.getInstance();
     private final Handler handler = new Handler();
     private Map<String, Light> lights;
@@ -130,26 +128,6 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onCacheUpdated(List<Integer> cacheNotificationsList, PHBridge bridge) {
-            // Here you receive notifications that the BridgeResource Cache was updated. Use the PHMessageType to
-            // check which cache was updated, e.g.
-            if (!bridge.getResourceCache().getAllLights().isEmpty()) {
-                List<PHLight> lights = bridge.getResourceCache().getAllLights();
-                LIGHT_TO_NAME = new String[lights.size() + 1];
-                LIGHT_TO_MODEL = new String[lights.size() + 1];
-                for (int i = 0; i < lights.size(); i++) {
-                    LIGHT_TO_NAME[i + 1] = lights.get(i).getName();
-                    LIGHT_TO_MODEL[i + 1] = lights.get(i).getModelNumber();
-                }
-                if (BuildConfig.DEBUG)
-                    Logger.log("Light cache updated: " + Arrays.toString(LIGHT_TO_NAME));
-                phHueSDK.disableHeartbeat(bridge);
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        ruleAdapter.notifyDataSetChanged();
-                    }
-                });
-            }
         }
 
         @Override
@@ -159,7 +137,6 @@ public class MainActivity extends AppCompatActivity {
             // At this point you are connected to a bridge so you should pass control to your main program/activity.
             // The username is generated randomly by the bridge.
             // Also it is recommended you store the connected IP Address/ Username in your app here.  This will allow easy automatic connection on subsequent use.
-            phHueSDK.enableHeartbeat(b, PHHueSDK.HB_INTERVAL);
             SharedPreferences.Editor edit = getSharedPreferences("HueNotifier", MODE_PRIVATE)
                     .edit();
             edit.putString("bridge_ip",
@@ -275,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void getLights() {
-        HueAPI api = ColorFlashService.getAPI(
+        HueAPI api = APIHelper.getAPI(
                 getSharedPreferences("HueNotifier", MODE_PRIVATE));
         api.getLights().enqueue(
                 new Callback<Map<String, Light>>() {
@@ -284,6 +261,12 @@ public class MainActivity extends AppCompatActivity {
                                            Response<Map<String, Light>> response) {
                         lights = response.body();
                         fadeView(true, findViewById(R.id.fab));
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                ruleAdapter.notifyDataSetChanged();
+                            }
+                        });
                     }
 
                     @Override
@@ -581,7 +564,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View v = inflater.inflate(R.layout.rule, parent, false);
+            View v = inflater.inflate(rule, parent, false);
             v.setOnClickListener(clickListener);
             ViewHolder holder = new ViewHolder(v);
             holder.edit.findViewById(R.id.test).setOnClickListener(testClickListener);
@@ -609,9 +592,10 @@ public class MainActivity extends AppCompatActivity {
                 TextView light = (TextView) inflater
                         .inflate(R.layout.light, holder.linearLayout, false);
                 int lightIcon;
-                if (LIGHT_TO_NAME != null && LIGHT_TO_NAME.length > rule.lights[i]) {
-                    light.setText(LIGHT_TO_NAME[rule.lights[i]]);
-                    lightIcon = Util.getLightIcon(LIGHT_TO_MODEL[rule.lights[i]]);
+                if (lights != null && lights.containsKey(String.valueOf(rule.lights[i]))) {
+                    Light lightObject = lights.get(String.valueOf(rule.lights[i]));
+                    light.setText(lightObject.name);
+                    lightIcon = Util.getLightIcon(lightObject.modelid);
                 } else {
                     light.setText("Light #" + rule.lights[i]);
                     lightIcon = R.drawable.ic_light;
