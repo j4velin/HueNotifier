@@ -26,12 +26,15 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 abstract class APIHelper {
 
+    private final static boolean LOG_HTTP = false;
+
     private APIHelper() {
     }
 
     static HueAPI getAPI(final SharedPreferences prefs) {
         Retrofit.Builder builder = new Retrofit.Builder();
-        insertInterceptor(builder);
+        if (LOG_HTTP)
+            insertInterceptor(builder);
         return builder.baseUrl(
                 "http://" + prefs.getString("bridge_ip", null) + "/api/" + prefs
                         .getString("username", null) + "/")
@@ -45,7 +48,7 @@ abstract class APIHelper {
                 new HttpLoggingInterceptor.Logger() {
                     @Override
                     public void log(String message) {
-                        Logger.log(message);
+                        Logger.log("  " + message);
                     }
                 });
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);

@@ -29,16 +29,11 @@ abstract class APIHelper {
 
     static HueAPI getAPI(final SharedPreferences prefs) {
         Retrofit.Builder builder = new Retrofit.Builder();
-        insertInterceptor(builder);
         return builder.baseUrl(
                 "http://" + prefs.getString("bridge_ip", null) + "/api/" + prefs
                         .getString("username", null) + "/")
                 .addConverterFactory(GsonConverterFactory
                         .create(new GsonBuilder().setLenient().create())).
                         build().create(HueAPI.class);
-    }
-
-    private static void insertInterceptor(Retrofit.Builder builder) {
-        // nop
     }
 }

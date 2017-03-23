@@ -19,6 +19,8 @@ import android.app.Notification;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
@@ -73,24 +75,32 @@ public class NotificationListener extends NotificationListenerService {
                     Logger.log("ignore duplicate notification from " + pkg);
                 return;
             }
-            lastTime = current;
-            lastPackage = pkg;
-            Collection<String> people = null;
-            if (Build.VERSION.SDK_INT >= 19) {
-                people = notification
-                        .getNotification().extras.getStringArrayList(Notification.EXTRA_PEOPLE);
+            ConnectivityManager cm =
+                    (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            boolean isWiFi = activeNetwork.getType() == ConnectivityManager.TYPE_WIFI;
+            if (isWiFi) {
+                lastTime = current;
+                lastPackage = pkg;
+                Collection<String> people = null;
+                if (Build.VERSION.SDK_INT >= 19) {
+                    people = notification
+                            .getNotification().extras.getStringArrayList(Notification.EXTRA_PEOPLE);
+                }
+                if (BuildConfig.DEBUG)
+                    Logger.log(
+                            "received notification from " + lastPackage + ", people=" + people);
+                Database db = Database.getInstance(this);
+                if (db.contains(lastPackage)) {
+                    String pattern = db.getPattern(lastPackage, people);
+                    startService(new Intent(this, ColorFlashService.class)
+                            .putExtra("lights", Util.getLights(pattern))
+                            .putExtra("colors", Util.getColors(pattern)));
+                }
+                db.close();
+            } else if (BuildConfig.DEBUG) {
+                Logger.log("Not connected to WiFi network --> ignore");
             }
-            if (BuildConfig.DEBUG)
-                Logger.log(
-                        "received notification from " + lastPackage + ", people=" + people);
-            Database db = Database.getInstance(this);
-            if (db.contains(lastPackage)) {
-                String pattern = db.getPattern(lastPackage, people);
-                startService(new Intent(this, ColorFlashService.class)
-                        .putExtra("lights", Util.getLights(pattern))
-                        .putExtra("colors", Util.getColors(pattern)));
-            }
-            db.close();
         }
     }
 
