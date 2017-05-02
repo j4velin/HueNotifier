@@ -34,7 +34,7 @@ import retrofit2.Response;
 public class ColorFlashService extends IntentService {
 
     private final static int ALERT_STATE_DURATION = 1000; // in ms
-    private final List<Integer> changing_lights = new LinkedList<>();
+    private final static List<Integer> changing_lights = new LinkedList<>();
     private HueAPI api;
 
     public ColorFlashService() {
