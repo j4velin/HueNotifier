@@ -1,5 +1,4 @@
 # HueNotifier
-=========
 
 An app that uses the Philips hue system to notify you about new events on your Android device
 
