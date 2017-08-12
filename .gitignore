@@ -7,3 +7,5 @@
 /captures
 .externalNativeBuild
 /key.properties
+/app/libs/huelocalsdk.jar
+/app/libs/huesdkresources.jar
