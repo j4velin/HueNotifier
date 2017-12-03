@@ -32,7 +32,7 @@ import java.util.Collection;
 public class NotificationListener extends NotificationListenerService {
 
     private final static long TIME_THRESHOLD = 1000;
-    private static boolean ignoreOnGoing = true, ignoreLowPriority = true;
+    private static boolean ignoreOnGoing = true, ignoreLowPriority = true, flashOnlyIfLightsOn = true;
     private long lastTime = 0L;
     private String lastPackage = null;
 
@@ -40,6 +40,7 @@ public class NotificationListener extends NotificationListenerService {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
         ignoreOnGoing = prefs.getBoolean("ignoreOnGoing", true);
         ignoreLowPriority = prefs.getBoolean("ignoreLowPriority", true);
+        flashOnlyIfLightsOn = prefs.getBoolean("flashOnlyIfLightsOn", true);
     }
 
     @Override
@@ -95,7 +96,8 @@ public class NotificationListener extends NotificationListenerService {
                     String pattern = db.getPattern(lastPackage, people);
                     startService(new Intent(this, ColorFlashService.class)
                             .putExtra("lights", Util.getLights(pattern))
-                            .putExtra("colors", Util.getColors(pattern)));
+                            .putExtra("colors", Util.getColors(pattern))
+                            .putExtra("flashOnlyIfLightsOn", flashOnlyIfLightsOn));
                 }
                 db.close();
             } else if (BuildConfig.DEBUG) {

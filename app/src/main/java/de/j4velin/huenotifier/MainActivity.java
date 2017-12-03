@@ -371,7 +371,8 @@ public class MainActivity extends AppCompatActivity {
                                                     startService(new Intent(MainActivity.this,
                                                             ColorFlashService.class)
                                                             .putExtra("lights", new int[]{tag[0]})
-                                                            .putExtra("colors", new int[]{color}));
+                                                            .putExtra("colors", new int[]{color})
+                                                            .putExtra("flashOnlyIfLightsOn", false));
                                                 }
                                             });
                                     dialog.show();
@@ -534,7 +535,8 @@ public class MainActivity extends AppCompatActivity {
                     final int itemPosition = ruleList.getChildLayoutPosition(cardView);
                     startService(new Intent(MainActivity.this, ColorFlashService.class).
                             putExtra("lights", rules.get(itemPosition).lights)
-                            .putExtra("colors", rules.get(itemPosition).colors));
+                            .putExtra("colors", rules.get(itemPosition).colors)
+                            .putExtra("flashOnlyIfLightsOn", false));
                 } else {
                     Snackbar.make(findViewById(android.R.id.content), R.string.not_connected,
                             Snackbar.LENGTH_SHORT).show();
