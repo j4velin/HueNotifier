@@ -348,40 +348,38 @@ public class MainActivity extends AppCompatActivity {
 
                     for (Map.Entry<String, Light> entry : lights.entrySet()) {
                         Light light = entry.getValue();
+                        final LinearLayout cbLayout = new LinearLayout(linearLayout.getContext());
                         final CheckBox cb = new CheckBox(MainActivity.this);
-                        cb.setText(light.name);
+                        final TextView tv = new TextView(MainActivity.this);
+                        tv.setText(light.name);
                         final int[] tag = new int[2];
                         tag[0] = Integer.valueOf(entry.getKey());
+                        tag[1] = Color.WHITE;
                         cb.setTag(tag);
                         cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                             @Override
                             public void onCheckedChanged(CompoundButton compoundButton,
                                                          boolean isChecked) {
                                 if (isChecked) {
-                                    ColorPickerDialog dialog = new ColorPickerDialog(
-                                            MainActivity.this,
-                                            Color.WHITE);
-                                    dialog.setOnColorChangedListener(
-                                            new ColorPickerDialog.OnColorChangedListener() {
-                                                @Override
-                                                public void onColorChanged(int color) {
-                                                    cb.setTextColor(color);
-                                                    tag[1] = color;
-                                                    cb.setTag(tag);
-                                                    startService(new Intent(MainActivity.this,
-                                                            ColorFlashService.class)
-                                                            .putExtra("lights", new int[]{tag[0]})
-                                                            .putExtra("colors", new int[]{color})
-                                                            .putExtra("flashOnlyIfLightsOn", false));
-                                                }
-                                            });
-                                    dialog.show();
+                                    showColorPickerDialog(cb, tv, tag);
                                 } else {
-                                    cb.setTextColor(Color.WHITE);
+                                    tv.setTextColor(tag[1]);
                                 }
                             }
                         });
-                        linearLayout.addView(cb);
+                        tv.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                if(!cb.isChecked()) {
+                                    cb.setChecked(true);
+                                } else {
+                                    showColorPickerDialog(cb, tv, tag);
+                                }
+                            }
+                        });
+                        cbLayout.addView(cb);
+                        cbLayout.addView(tv);
+                        linearLayout.addView(cbLayout);
                         checkBoxes.add(cb);
                     }
                     new AlertDialog.Builder(MainActivity.this).setView(v).
@@ -422,6 +420,27 @@ public class MainActivity extends AppCompatActivity {
                 }
             }).execute();
         }
+    }
+
+    private void showColorPickerDialog(final CheckBox cb, final TextView tv, final int[] tag) {
+        ColorPickerDialog dialog = new ColorPickerDialog(
+                MainActivity.this,
+                tag[1]);
+        dialog.setOnColorChangedListener(
+                new ColorPickerDialog.OnColorChangedListener() {
+                    @Override
+                    public void onColorChanged(int color) {
+                        tv.setTextColor(color);
+                        tag[1] = color;
+                        cb.setTag(tag);
+                        startService(new Intent(MainActivity.this,
+                                ColorFlashService.class)
+                                .putExtra("lights", new int[]{tag[0]})
+                                .putExtra("colors", new int[]{color})
+                                .putExtra("flashOnlyIfLightsOn", false));
+                    }
+                });
+        dialog.show();
     }
 
     private void connectToBridge() {
