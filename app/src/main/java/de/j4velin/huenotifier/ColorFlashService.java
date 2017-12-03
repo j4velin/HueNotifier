@@ -54,6 +54,7 @@ public class ColorFlashService extends IntentService {
                 api = APIHelper.getAPI(prefs);
                 int[] colors = intent.getIntArrayExtra("colors");
                 int[] lights = intent.getIntArrayExtra("lights");
+                final boolean flashOnlyIfLightsOn = intent.getBooleanExtra("flashOnlyIfLightsOn", true);
                 int size = Math.min(colors.length, lights.length);
                 for (int i = 0; i < size; i++) {
                     if (BuildConfig.DEBUG)
@@ -62,7 +63,7 @@ public class ColorFlashService extends IntentService {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            doColorFlash(color, light);
+                            doColorFlash(color, light, flashOnlyIfLightsOn);
                         }
                     }).start();
                 }
@@ -73,7 +74,7 @@ public class ColorFlashService extends IntentService {
         }
     }
 
-    private void doColorFlash(final int color, final int light) {
+    private void doColorFlash(final int color, final int light, final boolean flashOnlyIfLightsOn) {
         synchronized (changing_lights) {
             while (changing_lights.contains(light)) {
                 try {
@@ -90,75 +91,77 @@ public class ColorFlashService extends IntentService {
                 if (BuildConfig.DEBUG)
                     Logger.log("current state: " + response.body());
                 final Light.LightState currentState = response.body().state;
-                Light.LightState alertState = new Light.LightState();
-                alertState.on = true;
-                alertState.xy =
-                        PHUtilities.calculateXY(color, response.body().modelid);
-                api.setLightState(light, alertState).enqueue(new Callback<List<JsonElement>>() {
-                    @Override
-                    public void onResponse(Call<List<JsonElement>> call,
-                                           Response<List<JsonElement>> response) {
-                        if (BuildConfig.DEBUG)
-                            Logger.log(
-                                    "set alert state response: " + Arrays
-                                            .toString(response.body().toArray()));
-                        new Handler().postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                api.setLightState(light, currentState)
-                                        .enqueue(new Callback<List<JsonElement>>() {
-                                            @Override
-                                            public void onResponse(Call<List<JsonElement>> call,
-                                                                   Response<List<JsonElement>> response) {
-                                                if (BuildConfig.DEBUG)
-                                                    Logger.log(
-                                                            "revert state response: " + Arrays
-                                                                    .toString(response.body()
-                                                                            .toArray()));
-                                                done(light);
-                                            }
-
-                                            @Override
-                                            public void onFailure(Call<List<JsonElement>> call,
-                                                                  Throwable t) {
-                                                if (BuildConfig.DEBUG) {
-                                                    Logger.log("unable to restore original state:");
-                                                    Logger.log(t);
+                if(!flashOnlyIfLightsOn || currentState.on) {
+                    Light.LightState alertState = new Light.LightState();
+                    alertState.on = true;
+                    alertState.xy =
+                            PHUtilities.calculateXY(color, response.body().modelid);
+                    api.setLightState(light, alertState).enqueue(new Callback<List<JsonElement>>() {
+                        @Override
+                        public void onResponse(Call<List<JsonElement>> call,
+                                               Response<List<JsonElement>> response) {
+                            if (BuildConfig.DEBUG)
+                                Logger.log(
+                                        "set alert state response: " + Arrays
+                                                .toString(response.body().toArray()));
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    api.setLightState(light, currentState)
+                                            .enqueue(new Callback<List<JsonElement>>() {
+                                                @Override
+                                                public void onResponse(Call<List<JsonElement>> call,
+                                                                       Response<List<JsonElement>> response) {
+                                                    if (BuildConfig.DEBUG)
+                                                        Logger.log(
+                                                                "revert state response: " + Arrays
+                                                                        .toString(response.body()
+                                                                                .toArray()));
+                                                    done(light);
                                                 }
-                                                // retry
-                                                api.setLightState(light, currentState)
-                                                        .enqueue(new Callback<List<JsonElement>>() {
-                                                            @Override
-                                                            public void onResponse(
-                                                                    Call<List<JsonElement>> call,
-                                                                    Response<List<JsonElement>> response) {
-                                                                done(light);
-                                                            }
 
-                                                            @Override
-                                                            public void onFailure(
-                                                                    Call<List<JsonElement>> call,
-                                                                    Throwable t) {
-                                                                if (BuildConfig.DEBUG)
-                                                                    Logger.log(t);
-                                                                done(light);
-                                                            }
-                                                        });
-                                            }
-                                        });
-                            }
-                        }, ALERT_STATE_DURATION);
-                    }
+                                                @Override
+                                                public void onFailure(Call<List<JsonElement>> call,
+                                                                      Throwable t) {
+                                                    if (BuildConfig.DEBUG) {
+                                                        Logger.log("unable to restore original state:");
+                                                        Logger.log(t);
+                                                    }
+                                                    // retry
+                                                    api.setLightState(light, currentState)
+                                                            .enqueue(new Callback<List<JsonElement>>() {
+                                                                @Override
+                                                                public void onResponse(
+                                                                        Call<List<JsonElement>> call,
+                                                                        Response<List<JsonElement>> response) {
+                                                                    done(light);
+                                                                }
 
-                    @Override
-                    public void onFailure(Call<List<JsonElement>> call, Throwable t) {
-                        if (BuildConfig.DEBUG) {
-                            Logger.log("unable to change to alert state:");
-                            Logger.log(t);
+                                                                @Override
+                                                                public void onFailure(
+                                                                        Call<List<JsonElement>> call,
+                                                                        Throwable t) {
+                                                                    if (BuildConfig.DEBUG)
+                                                                        Logger.log(t);
+                                                                    done(light);
+                                                                }
+                                                            });
+                                                }
+                                            });
+                                }
+                            }, ALERT_STATE_DURATION);
                         }
-                        done(light);
-                    }
-                });
+
+                        @Override
+                        public void onFailure(Call<List<JsonElement>> call, Throwable t) {
+                            if (BuildConfig.DEBUG) {
+                                Logger.log("unable to change to alert state:");
+                                Logger.log(t);
+                            }
+                            done(light);
+                        }
+                    });
+                }
             }
 
             @Override

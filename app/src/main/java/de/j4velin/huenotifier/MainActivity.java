@@ -318,6 +318,17 @@ public class MainActivity extends AppCompatActivity {
         ruleList.setAdapter(ruleAdapter);
     }
 
+    private void editRule(Rule rule) {
+        if (lights == null) {
+            getLights();
+            Snackbar.make(findViewById(android.R.id.content),
+                    "No lights found yet - please wait...",
+                    Snackbar.LENGTH_LONG).show();
+        } else {
+            showEditRuleDialog(rule);
+        }
+    }
+
     private void addRule() {
         if (lights == null) {
             getLights();
@@ -328,99 +339,130 @@ public class MainActivity extends AppCompatActivity {
             new AppPicker(MainActivity.this, new AppPicker.AppPickListener() {
                 @Override
                 public void appSelected(final AppPicker.AppData app) {
-
-                    final List<CheckBox> checkBoxes = new ArrayList<CheckBox>(lights.size());
-
-                    View v = getLayoutInflater().inflate(R.layout.rule_add, null);
-                    TextView appName = (TextView) v.findViewById(R.id.app);
-                    appName.setText(app.name);
-
-                    TextView person = (TextView) v.findViewById(R.id.person);
-                    Spinner people = (Spinner) v.findViewById(R.id.people);
-                    if (Build.VERSION.SDK_INT >= 19 && BuildConfig.DEBUG) {
-                        // TODO: fill spinner
-                    } else {
-                        person.setVisibility(View.GONE);
-                        people.setVisibility(View.GONE);
-                    }
-
-                    LinearLayout linearLayout = (LinearLayout) v.findViewById(R.id.lights);
-
-                    for (Map.Entry<String, Light> entry : lights.entrySet()) {
-                        Light light = entry.getValue();
-                        final CheckBox cb = new CheckBox(MainActivity.this);
-                        cb.setText(light.name);
-                        final int[] tag = new int[2];
-                        tag[0] = Integer.valueOf(entry.getKey());
-                        cb.setTag(tag);
-                        cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-                            @Override
-                            public void onCheckedChanged(CompoundButton compoundButton,
-                                                         boolean isChecked) {
-                                if (isChecked) {
-                                    ColorPickerDialog dialog = new ColorPickerDialog(
-                                            MainActivity.this,
-                                            Color.WHITE);
-                                    dialog.setOnColorChangedListener(
-                                            new ColorPickerDialog.OnColorChangedListener() {
-                                                @Override
-                                                public void onColorChanged(int color) {
-                                                    cb.setTextColor(color);
-                                                    tag[1] = color;
-                                                    cb.setTag(tag);
-                                                    startService(new Intent(MainActivity.this,
-                                                            ColorFlashService.class)
-                                                            .putExtra("lights", new int[]{tag[0]})
-                                                            .putExtra("colors", new int[]{color}));
-                                                }
-                                            });
-                                    dialog.show();
-                                } else {
-                                    cb.setTextColor(Color.WHITE);
-                                }
-                            }
-                        });
-                        linearLayout.addView(cb);
-                        checkBoxes.add(cb);
-                    }
-                    new AlertDialog.Builder(MainActivity.this).setView(v).
-                            setPositiveButton(android.R.string.ok,
-                                    new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialogInterface,
-                                                            int i) {
-                                            String lights = null;
-                                            String colors = null;
-                                            for (CheckBox cb : checkBoxes) {
-                                                if (cb.isChecked()) {
-                                                    if (lights == null) {
-                                                        lights = String
-                                                                .valueOf(((int[]) cb.getTag())[0]);
-                                                        colors = String
-                                                                .valueOf(((int[]) cb.getTag())[1]);
-                                                    } else {
-                                                        lights += "," + ((int[]) cb.getTag())[0];
-                                                        colors += "," + ((int[]) cb.getTag())[1];
-                                                    }
-                                                }
-                                            }
-                                            dialogInterface.dismiss();
-                                            Database db = Database.getInstance(MainActivity.this);
-                                            db.insert(app.name, app.pkg, null, lights, colors);
-                                            rules.add(db.getRule(app.pkg, null));
-                                            db.close();
-                                            ruleAdapter.notifyDataSetChanged();
-                                        }
-                                    }).setNegativeButton(android.R.string.cancel,
-                            new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialogInterface, int i) {
-                                    dialogInterface.cancel();
-                                }
-                            }).create().show();
+                    Rule rule = new Rule(app.name, app.pkg, null, new int[0], new int[0]);
+                    showEditRuleDialog(rule);
                 }
             }).execute();
         }
+    }
+
+    private void showEditRuleDialog(final Rule rule) {
+        final List<CheckBox> checkBoxes = new ArrayList<CheckBox>(lights.size());
+
+        View v = getLayoutInflater().inflate(R.layout.rule_add, null);
+        TextView appName = (TextView) v.findViewById(R.id.app);
+        appName.setText(rule.appName);
+
+        TextView person = (TextView) v.findViewById(R.id.person);
+        Spinner people = (Spinner) v.findViewById(R.id.people);
+        if (Build.VERSION.SDK_INT >= 19 && BuildConfig.DEBUG) {
+            // TODO: fill spinner
+        } else {
+            person.setVisibility(View.GONE);
+            people.setVisibility(View.GONE);
+        }
+
+        LinearLayout linearLayout = (LinearLayout) v.findViewById(R.id.lights);
+
+        for (Map.Entry<String, Light> entry : lights.entrySet()) {
+            Light light = entry.getValue();
+            final int[] tag = new int[2];
+            tag[0] = Integer.valueOf(entry.getKey());
+            tag[1] = rule.getColor(tag[0]);
+
+            final LinearLayout cbLayout = new LinearLayout(linearLayout.getContext());
+            final CheckBox cb = new CheckBox(MainActivity.this);
+            final TextView tv = new TextView(MainActivity.this);
+            tv.setText(light.name);
+            tv.setTextColor(tag[1]);
+            cb.setTag(tag);
+            cb.setChecked(rule.contains(tag[0]));
+            cb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton,
+                                             boolean isChecked) {
+                    if (isChecked) {
+                        showColorPickerDialog(cb, tv, tag);
+                    } else {
+                        tv.setTextColor(tag[1]);
+                    }
+                }
+            });
+            tv.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(!cb.isChecked()) {
+                        cb.setChecked(true);
+                    } else {
+                        showColorPickerDialog(cb, tv, tag);
+                    }
+                }
+            });
+            cbLayout.addView(cb);
+            cbLayout.addView(tv);
+            linearLayout.addView(cbLayout);
+            checkBoxes.add(cb);
+        }
+        new AlertDialog.Builder(MainActivity.this).setView(v).
+                setPositiveButton(android.R.string.ok,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface,
+                                                int i) {
+                                String lights = null;
+                                String colors = null;
+                                for (CheckBox cb : checkBoxes) {
+                                    if (cb.isChecked()) {
+                                        if (lights == null) {
+                                            lights = String
+                                                    .valueOf(((int[]) cb.getTag())[0]);
+                                            colors = String
+                                                    .valueOf(((int[]) cb.getTag())[1]);
+                                        } else {
+                                            lights += "," + ((int[]) cb.getTag())[0];
+                                            colors += "," + ((int[]) cb.getTag())[1];
+                                        }
+                                    }
+                                }
+                                dialogInterface.dismiss();
+                                Database db = Database.getInstance(MainActivity.this);
+                                if(db.contains(rule.appPkg)) {
+                                    db.delete(rule.appPkg, rule.person);
+                                    rules.remove(rule);
+                                }
+                                db.insert(rule.appName, rule.appPkg, null, lights, colors);
+                                rules.add(db.getRule(rule.appPkg, null));
+                                db.close();
+                                ruleAdapter.notifyDataSetChanged();
+                            }
+                        }).setNegativeButton(android.R.string.cancel,
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.cancel();
+                    }
+                }).create().show();
+    }
+
+    private void showColorPickerDialog(final CheckBox cb, final TextView tv, final int[] tag) {
+        ColorPickerDialog dialog = new ColorPickerDialog(
+                MainActivity.this,
+                tag[1]);
+        dialog.setOnColorChangedListener(
+                new ColorPickerDialog.OnColorChangedListener() {
+                    @Override
+                    public void onColorChanged(int color) {
+                        tv.setTextColor(color);
+                        tag[1] = color;
+                        cb.setTag(tag);
+                        startService(new Intent(MainActivity.this,
+                                ColorFlashService.class)
+                                .putExtra("lights", new int[]{tag[0]})
+                                .putExtra("colors", new int[]{color})
+                                .putExtra("flashOnlyIfLightsOn", false));
+                    }
+                });
+        dialog.show();
     }
 
     private void connectToBridge() {
@@ -511,6 +553,24 @@ public class MainActivity extends AppCompatActivity {
             this.appPkg = appPkg;
             this.person = person;
         }
+
+        public int getColor(int lightId) {
+            for(int i = 0; i < lights.length; i++) {
+                if(lights[i] == lightId) {
+                    return colors[i];
+                }
+            }
+            return Color.WHITE;
+        }
+
+        public boolean contains(int lightId) {
+            for(int i = 0; i < lights.length; i++) {
+                if(lights[i] == lightId) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     private class RuleAdapter extends RecyclerView.Adapter<RuleAdapter.ViewHolder> {
@@ -525,6 +585,21 @@ public class MainActivity extends AppCompatActivity {
                 fadeView(true, edit);
             }
         };
+        private final View.OnClickListener configureClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                View editView = (View) view.getParent();
+                if (isConnected) {
+                    View cardView = (View) editView.getParent();
+                    final int itemPosition = ruleList.getChildLayoutPosition(cardView);
+                    editRule(rules.get(itemPosition));
+                } else {
+                    Snackbar.make(findViewById(android.R.id.content), R.string.not_connected,
+                            Snackbar.LENGTH_SHORT).show();
+                }
+                fadeView(false, editView);
+            }
+        };
         private final View.OnClickListener testClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -534,7 +609,8 @@ public class MainActivity extends AppCompatActivity {
                     final int itemPosition = ruleList.getChildLayoutPosition(cardView);
                     startService(new Intent(MainActivity.this, ColorFlashService.class).
                             putExtra("lights", rules.get(itemPosition).lights)
-                            .putExtra("colors", rules.get(itemPosition).colors));
+                            .putExtra("colors", rules.get(itemPosition).colors)
+                            .putExtra("flashOnlyIfLightsOn", false));
                 } else {
                     Snackbar.make(findViewById(android.R.id.content), R.string.not_connected,
                             Snackbar.LENGTH_SHORT).show();
@@ -567,6 +643,7 @@ public class MainActivity extends AppCompatActivity {
             View v = inflater.inflate(rule, parent, false);
             v.setOnClickListener(clickListener);
             ViewHolder holder = new ViewHolder(v);
+            holder.edit.findViewById(R.id.configure).setOnClickListener(configureClickListener);
             holder.edit.findViewById(R.id.test).setOnClickListener(testClickListener);
             holder.edit.findViewById(R.id.delete).setOnClickListener(deleteClickListener);
             holder.edit.findViewById(R.id.cancel).setOnClickListener(cancelClickListener);

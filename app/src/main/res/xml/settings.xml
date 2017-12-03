@@ -8,5 +8,9 @@
         android:defaultValue="true"
         android:key="ignoreLowPriority"
         android:title="Ignore low priority notifications" />
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="flashOnlyIfLightsOn"
+        android:title="Flash notifications only if lights are on" />
 
 </PreferenceScreen>
