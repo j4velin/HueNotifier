@@ -34,6 +34,18 @@
         android:visibility="gone">
 
         <TextView
+            android:id="@+id/configure"
+            android:layout_width="0dip"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:drawablePadding="5dp"
+            android:drawableStart="@drawable/ic_settings_24dp"
+            android:drawableTint="#fff"
+            android:gravity="center_vertical"
+            android:padding="10dp"
+            android:text="Edit" />
+
+        <TextView
             android:id="@+id/test"
             android:layout_width="0dip"
             android:layout_height="match_parent"
