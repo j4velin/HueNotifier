@@ -40,7 +40,7 @@
                 android:drawableTint="#fff"
                 android:gravity="center_vertical"
                 android:padding="5dp"
-                android:text="Not connected"
+                android:text="@string/not_connected"
                 app:layout_collapseMode="none" />
 
             <android.support.v7.widget.Toolbar

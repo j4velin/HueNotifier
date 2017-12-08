@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="10dp"
-        android:text="Please press the authentication button on your hue bridge to allow communication with the app" />
+        android:text="@string/auth" />
 
     <ImageView
         android:layout_width="match_parent"

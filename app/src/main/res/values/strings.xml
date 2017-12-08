@@ -61,7 +61,7 @@
         <item>3</item>
     </string-array>
 
-    <string-array name="multi_select_list_preference_default_value" />
+    <string-array name="multi_select_list_preference_default_value"/>
 
     <string name="pref_title_system_sync_settings">System sync settings</string>
 
@@ -82,4 +82,13 @@
     <string name="searching_bridge">Searching for hue bridge...</string>
     <string name="permission_required">You need to grant the app notification access</string>
     <string name="grant_access">Grant access</string>
+    <string name="no_light_please_wait">No lights found yet - please wait...</string>
+    <string name="auth">Please press the authentication button on your hue bridge to allow communication with the app</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="preview">Preview</string>
+    <string name="person">Person:</string>
+    <string name="on_going">Ignore on-going notifications</string>
+    <string name="low_priorty">Ignore low priority notifications</string>
+    <string name="flash_only_when_on">Flash notifications only if lights are on</string>
 </resources>

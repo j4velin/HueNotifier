@@ -3,14 +3,14 @@
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="ignoreOnGoing"
-        android:title="Ignore on-going notifications"/>
+        android:title="@string/on_going"/>
     <CheckBoxPreference
         android:defaultValue="true"
         android:key="ignoreLowPriority"
-        android:title="Ignore low priority notifications"/>
+        android:title="@string/low_priorty"/>
     <CheckBoxPreference
         android:defaultValue="false"
         android:key="flashOnlyIfLightsOn"
-        android:title="Flash notifications only if lights are on"/>
+        android:title="@string/flash_only_when_on"/>
 
 </PreferenceScreen>

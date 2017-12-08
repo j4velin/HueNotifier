@@ -16,9 +16,9 @@
 package de.j4velin.huenotifier;
 
 public class Light {
-    LightState state;
+    public LightState state;
     String name;
-    String modelid;
+    public String modelid;
 
     @Override
     public String toString() {
@@ -26,8 +26,8 @@ public class Light {
     }
 
     public static class LightState {
-        boolean on;
-        float[] xy;
+        public boolean on;
+        public float[] xy;
 
         @Override
         public String toString() {

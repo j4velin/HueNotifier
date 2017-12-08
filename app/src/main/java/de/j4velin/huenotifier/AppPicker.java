@@ -130,7 +130,7 @@ class AppPicker extends AsyncTask<Void, Integer, Void> {
     }
 
     public class AppData implements Comparable<AppData> {
-        public final String name, pkg;
+        final String name, pkg;
         public final Drawable icon;
 
         private AppData(String name, String pkg, Drawable icon) {

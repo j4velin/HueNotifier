@@ -43,7 +43,7 @@
             android:drawableTint="#fff"
             android:gravity="center_vertical"
             android:padding="10dp"
-            android:text="Edit"/>
+            android:text="@string/edit"/>
 
         <TextView
             android:id="@+id/delete"
@@ -55,7 +55,7 @@
             android:drawableTint="#fff"
             android:gravity="center_vertical"
             android:padding="10dp"
-            android:text="Delete"/>
+            android:text="@string/delete"/>
 
         <TextView
             android:id="@+id/cancel"

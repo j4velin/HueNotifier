@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_below="@id/app"
-        android:text="Person: "/>
+        android:text="@string/person"/>
 
     <Spinner
         android:id="@+id/people"
@@ -40,10 +40,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/lights"
+        android:layout_marginTop="20dp"
         android:drawablePadding="5dp"
         android:drawableStart="@drawable/ic_light_filled"
-        android:layout_marginTop="20dp"
         android:drawableTint="#fff"
         android:padding="10dp"
-        android:text="Preview"/>
+        android:text="@string/preview"/>
 </RelativeLayout>

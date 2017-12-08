@@ -25,9 +25,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,11 +37,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
@@ -69,17 +64,15 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-import static de.j4velin.huenotifier.R.layout.rule;
-
 public class MainActivity extends AppCompatActivity {
 
     private final PHHueSDK phHueSDK = PHHueSDK.getInstance();
     private final Handler handler = new Handler();
-    private Map<String, Light> lights;
-    private List<Rule> rules;
-    private RecyclerView.Adapter ruleAdapter;
-    private RecyclerView ruleList;
-    private boolean isConnected = false;
+    Map<String, Light> lights;
+    List<Rule> rules;
+    RecyclerView.Adapter ruleAdapter;
+    RecyclerView ruleList;
+    boolean isConnected = false;
     private Dialog connectDialog; // for search & pushlink
     private final PHSDKListener listener = new PHSDKListener() {
 
@@ -226,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private static void fadeView(final boolean show, final View v) {
+    static void fadeView(final boolean show, final View v) {
         if (show) {
             v.setAlpha(0);
             v.setVisibility(View.VISIBLE);
@@ -314,15 +307,15 @@ public class MainActivity extends AppCompatActivity {
         ruleList.setHasFixedSize(false);
         ruleList.setLayoutManager(
                 new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-        ruleAdapter = new RuleAdapter();
+        ruleAdapter = new RuleAdapter(this);
         ruleList.setAdapter(ruleAdapter);
     }
 
-    private void editRule(Rule rule) {
+    void editRule(Rule rule) {
         if (lights == null) {
             getLights();
             Snackbar.make(findViewById(android.R.id.content),
-                    "No lights found yet - please wait...",
+                    R.string.no_light_please_wait,
                     Snackbar.LENGTH_LONG).show();
         } else {
             showEditRuleDialog(rule);
@@ -333,45 +326,17 @@ public class MainActivity extends AppCompatActivity {
         if (lights == null) {
             getLights();
             Snackbar.make(findViewById(android.R.id.content),
-                    "No lights found yet - please wait...",
+                    R.string.no_light_please_wait,
                     Snackbar.LENGTH_LONG).show();
         } else {
             new AppPicker(MainActivity.this, new AppPicker.AppPickListener() {
                 @Override
                 public void appSelected(final AppPicker.AppData app) {
-                    Rule rule = new Rule(app.name, app.pkg, null, new int[0], new int[0]);
+                    Rule rule = new Rule(app.name, app.pkg, null, new LightSettings());
                     showEditRuleDialog(rule);
                 }
             }).execute();
         }
-    }
-
-    static class LightSettings {
-        final int[] lights, colors;
-
-        private LightSettings(int[] lights, int[] colors) {
-            this.lights = lights;
-            this.colors = colors;
-        }
-    }
-
-    private LightSettings getLightSettings(List<CheckBox> checkBoxes) {
-        String lights = null;
-        String colors = null;
-        for (CheckBox cb : checkBoxes) {
-            if (cb.isChecked()) {
-                if (lights == null) {
-                    lights = String
-                            .valueOf(((int[]) cb.getTag())[0]);
-                    colors = String
-                            .valueOf(((int[]) cb.getTag())[1]);
-                } else {
-                    lights += "," + ((int[]) cb.getTag())[0];
-                    colors += "," + ((int[]) cb.getTag())[1];
-                }
-            }
-        }
-        return new LightSettings(Util.toIntArray(lights), Util.toIntArray(colors));
     }
 
     private void showEditRuleDialog(final Rule rule) {
@@ -436,7 +401,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(final View view) {
                 if (isConnected) {
-                    LightSettings lightSettings = getLightSettings(checkBoxes);
+                    LightSettings lightSettings = new LightSettings(checkBoxes);
                     startService(new Intent(MainActivity.this, ColorFlashService.class).
                             putExtra("lights", lightSettings.lights)
                             .putExtra("colors", lightSettings.colors)
@@ -454,7 +419,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialogInterface,
                                                 int i) {
-                                LightSettings lightSettings = getLightSettings(checkBoxes);
+                                LightSettings lightSettings = new LightSettings(checkBoxes);
                                 dialogInterface.dismiss();
                                 Database db = Database.getInstance(MainActivity.this);
                                 if (db.contains(rule.appPkg)) {
@@ -571,149 +536,5 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         phHueSDK.getNotificationManager().unregisterSDKListener(listener);
         phHueSDK.destroySDK();
-    }
-
-    static class Rule {
-        private final int[] lights, colors;
-        private final String appName, appPkg, person;
-
-        Rule(String appName, String appPkg, String person, int[] lights, int[] colors) {
-            this.lights = lights;
-            this.colors = colors;
-            this.appName = appName;
-            this.appPkg = appPkg;
-            this.person = person;
-        }
-
-        int getColor(int lightId) {
-            for (int i = 0; i < lights.length; i++) {
-                if (lights[i] == lightId) {
-                    return colors[i];
-                }
-            }
-            return Color.WHITE;
-        }
-
-        boolean contains(int lightId) {
-            for (int i = 0; i < lights.length; i++) {
-                if (lights[i] == lightId) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    private class RuleAdapter extends RecyclerView.Adapter<RuleAdapter.ViewHolder> {
-
-        private final LayoutInflater inflater = LayoutInflater.from(MainActivity.this);
-        private final PackageManager pm = getPackageManager();
-        private final View.OnClickListener clickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                View edit = view.findViewById(R.id.edit);
-                edit.setMinimumHeight(view.findViewById(R.id.lights).getHeight());
-                fadeView(true, edit);
-            }
-        };
-        private final View.OnClickListener configureClickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                View editView = (View) view.getParent();
-                if (isConnected) {
-                    View cardView = (View) editView.getParent();
-                    final int itemPosition = ruleList.getChildLayoutPosition(cardView);
-                    editRule(rules.get(itemPosition));
-                } else {
-                    Snackbar.make(findViewById(android.R.id.content), R.string.not_connected,
-                            Snackbar.LENGTH_SHORT).show();
-                }
-                fadeView(false, editView);
-            }
-        };
-        private final View.OnClickListener deleteClickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                View cardView = (View) view.getParent().getParent();
-                final int itemPosition = ruleList.getChildLayoutPosition(cardView);
-                Rule r = rules.remove(itemPosition);
-                ruleAdapter.notifyItemRemoved(itemPosition);
-                Database db = Database.getInstance(MainActivity.this);
-                db.delete(r.appPkg, r.person);
-                db.close();
-            }
-        };
-        private final View.OnClickListener cancelClickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                View editView = (View) view.getParent();
-                fadeView(false, editView);
-            }
-        };
-
-        @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View v = inflater.inflate(rule, parent, false);
-            v.setOnClickListener(clickListener);
-            ViewHolder holder = new ViewHolder(v);
-            holder.edit.findViewById(R.id.configure).setOnClickListener(configureClickListener);
-            holder.edit.findViewById(R.id.delete).setOnClickListener(deleteClickListener);
-            holder.edit.findViewById(R.id.cancel).setOnClickListener(cancelClickListener);
-            return holder;
-        }
-
-        @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
-            Rule rule = rules.get(position);
-            holder.text.setText(rule.appName);
-            holder.edit.setVisibility(View.GONE);
-            Drawable appIcon;
-            try {
-                appIcon = pm.getApplicationIcon(rule.appPkg);
-                appIcon.setBounds(0, 0, Util.dpToPx(MainActivity.this, 25),
-                        Util.dpToPx(MainActivity.this, 25));
-            } catch (PackageManager.NameNotFoundException e) {
-                appIcon = null;
-            }
-            holder.text.setCompoundDrawables(appIcon, null, null, null);
-            holder.linearLayout.removeAllViews();
-            for (int i = 0; i < rule.lights.length; i++) {
-                TextView light = (TextView) inflater
-                        .inflate(R.layout.light, holder.linearLayout, false);
-                int lightIcon;
-                if (lights != null && lights.containsKey(String.valueOf(rule.lights[i]))) {
-                    Light lightObject = lights.get(String.valueOf(rule.lights[i]));
-                    light.setText(lightObject.name);
-                    lightIcon = Util.getLightIcon(lightObject.modelid);
-                } else {
-                    light.setText("Light #" + rule.lights[i]);
-                    lightIcon = R.drawable.ic_light;
-                }
-                light.setCompoundDrawablesWithIntrinsicBounds(lightIcon, 0, 0, 0);
-                if (Build.VERSION.SDK_INT >= 23) {
-                    API23Wrapper.setCompoundDrawableTintList(light, rule.colors[i]);
-                }
-                light.setTextColor(rule.colors[i]);
-                holder.linearLayout.addView(light);
-            }
-        }
-
-        @Override
-        public int getItemCount() {
-            return rules.size();
-        }
-
-        class ViewHolder extends RecyclerView.ViewHolder {
-            final TextView text;
-            final LinearLayout linearLayout;
-            final View edit;
-
-            private ViewHolder(View itemView) {
-                super(itemView);
-                text = (TextView) itemView.findViewById(R.id.app);
-                linearLayout = (LinearLayout) itemView.findViewById(R.id.lights);
-                edit = itemView.findViewById(R.id.edit);
-            }
-        }
     }
 }

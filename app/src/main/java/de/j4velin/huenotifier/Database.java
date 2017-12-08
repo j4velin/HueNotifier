@@ -74,7 +74,7 @@ class Database extends SQLiteOpenHelper {
     }
 
     long insert(final String name, final String pkg, final String person, final
-    MainActivity.LightSettings lightSettings) {
+    LightSettings lightSettings) {
         if (contains(pkg)) {
             return -1;
         }
@@ -121,21 +121,22 @@ class Database extends SQLiteOpenHelper {
                     new String[]{pkg});
     }
 
-    List<MainActivity.Rule> getRules() {
+    List<Rule> getRules() {
         Cursor c = this.getReadableDatabase()
                 .rawQuery("SELECT name, package, person, lights, colors FROM apps", null);
-        List<MainActivity.Rule> rules = new ArrayList<>(c.getCount());
+        List<Rule> rules = new ArrayList<>(c.getCount());
         if (c.moveToFirst()) {
             do {
-                rules.add(new MainActivity.Rule(c.getString(0), c.getString(1), c.getString(2),
-                        Util.toIntArray(c.getString(3)), Util.toIntArray(c.getString(4))));
+                rules.add(
+                        new Rule(c.getString(0), c.getString(1), c.getString(2), new LightSettings(
+                                c.getString(3), c.getString(4))));
             } while (c.moveToNext());
         }
         c.close();
         return rules;
     }
 
-    MainActivity.Rule getRule(final String pkg, final String person) {
+    Rule getRule(final String pkg, final String person) {
         Cursor c;
         if (person != null)
             c = this.getReadableDatabase()
@@ -146,10 +147,10 @@ class Database extends SQLiteOpenHelper {
                 .rawQuery(
                         "SELECT name, package, person, lights, colors FROM apps WHERE package = ?",
                         new String[]{pkg});
-        MainActivity.Rule rule = null;
+        Rule rule = null;
         if (c.moveToFirst()) {
-            rule = new MainActivity.Rule(c.getString(0), pkg, person,
-                    Util.toIntArray(c.getString(3)), Util.toIntArray(c.getString(4)));
+            rule = new Rule(c.getString(0), pkg, person, new LightSettings(
+                    c.getString(3), c.getString(4)));
         }
         c.close();
         return rule;
