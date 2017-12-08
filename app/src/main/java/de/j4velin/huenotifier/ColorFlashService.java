@@ -19,6 +19,7 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 
 import com.google.gson.JsonElement;
 import com.philips.lighting.hue.sdk.utilities.PHUtilities;
@@ -54,7 +55,8 @@ public class ColorFlashService extends IntentService {
                 api = APIHelper.getAPI(prefs);
                 int[] colors = intent.getIntArrayExtra("colors");
                 int[] lights = intent.getIntArrayExtra("lights");
-                final boolean flashOnlyIfLightsOn = intent.getBooleanExtra("flashOnlyIfLightsOn", true);
+                final boolean flashOnlyIfLightsOn = PreferenceManager.getDefaultSharedPreferences(
+                        this).getBoolean("flashOnlyIfLightsOn", false);
                 int size = Math.min(colors.length, lights.length);
                 for (int i = 0; i < size; i++) {
                     if (BuildConfig.DEBUG)
@@ -91,7 +93,7 @@ public class ColorFlashService extends IntentService {
                 if (BuildConfig.DEBUG)
                     Logger.log("current state: " + response.body());
                 final Light.LightState currentState = response.body().state;
-                if(!flashOnlyIfLightsOn || currentState.on) {
+                if (!flashOnlyIfLightsOn || currentState.on) {
                     Light.LightState alertState = new Light.LightState();
                     alertState.on = true;
                     alertState.xy =
@@ -130,22 +132,22 @@ public class ColorFlashService extends IntentService {
                                                     // retry
                                                     api.setLightState(light, currentState)
                                                             .enqueue(new Callback<List<JsonElement>>() {
-                                                                @Override
-                                                                public void onResponse(
-                                                                        Call<List<JsonElement>> call,
-                                                                        Response<List<JsonElement>> response) {
-                                                                    done(light);
-                                                                }
+                                                                        @Override
+                                                                        public void onResponse(
+                                                                                Call<List<JsonElement>> call,
+                                                                                Response<List<JsonElement>> response) {
+                                                                            done(light);
+                                                                        }
 
-                                                                @Override
-                                                                public void onFailure(
-                                                                        Call<List<JsonElement>> call,
-                                                                        Throwable t) {
-                                                                    if (BuildConfig.DEBUG)
-                                                                        Logger.log(t);
-                                                                    done(light);
-                                                                }
-                                                            });
+                                                                        @Override
+                                                                        public void onFailure(
+                                                                                Call<List<JsonElement>> call,
+                                                                                Throwable t) {
+                                                                            if (BuildConfig.DEBUG)
+                                                                                Logger.log(t);
+                                                                            done(light);
+                                                                        }
+                                                                    });
                                                 }
                                             });
                                 }
