@@ -1,5 +1,4 @@
 # HueNotifier
-=========
 
 An app that uses the Philips hue system to notify you about new events on your Android device
 
@@ -13,3 +12,5 @@ An app that uses the Philips hue system to notify you about new events on your A
   <img alt="Get it on Google Play"
        src="https://developer.android.com/images/brand/en_generic_rgb_wo_45.png" />
 </a>
+
+To build the app, add the huelocalsdk.jar and huesdkresources.jar from https://github.com/PhilipsHue/PhilipsHueSDK-Java-MultiPlatform-Android/tree/master/JavaDesktopApp/libs to the app/libs/ folder.
