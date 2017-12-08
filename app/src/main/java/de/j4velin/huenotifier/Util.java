@@ -18,6 +18,8 @@ package de.j4velin.huenotifier;
 import android.content.Context;
 import android.util.TypedValue;
 
+import java.util.Arrays;
+
 abstract class Util {
 
     private Util() {
@@ -43,6 +45,12 @@ abstract class Util {
             re[i] = Integer.parseInt(values[i]);
         }
         return re;
+    }
+
+    static String toString(int[] array) {
+        String s = Arrays.toString(array);
+        s = s.substring(1, s.length() - 1);
+        return s.replace(" ", "");
     }
 
     static int getLightIcon(final String model) {

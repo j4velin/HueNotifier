@@ -73,8 +73,8 @@ class Database extends SQLiteOpenHelper {
         return re;
     }
 
-    long insert(final String name, final String pkg, final String person, final String lights,
-                final String colors) {
+    long insert(final String name, final String pkg, final String person, final
+    MainActivity.LightSettings lightSettings) {
         if (contains(pkg)) {
             return -1;
         }
@@ -83,8 +83,8 @@ class Database extends SQLiteOpenHelper {
         values.put("package", pkg);
         if (person != null)
             values.put("person", person);
-        values.put("lights", lights);
-        values.put("colors", colors);
+        values.put("lights", Util.toString(lightSettings.lights));
+        values.put("colors", Util.toString(lightSettings.colors));
         return this.getWritableDatabase().insert("apps", null, values);
     }
 

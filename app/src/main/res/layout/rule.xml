@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:card_view="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/card"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="5dp"
-    android:measureAllChildren="true"
-    card_view:cardElevation="4dp"
-    card_view:cardUseCompatPadding="true">
+                                    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+                                    android:id="@+id/card"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="5dp"
+                                    android:measureAllChildren="true"
+                                    card_view:cardElevation="4dp"
+                                    card_view:cardUseCompatPadding="true">
 
     <TextView
         android:id="@+id/app"
@@ -16,14 +16,14 @@
         android:layout_gravity="center_vertical"
         android:drawablePadding="10dp"
         android:gravity="center_vertical"
-        android:padding="10dp" />
+        android:padding="10dp"/>
 
     <LinearLayout
         android:id="@+id/lights"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"
-        android:orientation="vertical" />
+        android:orientation="vertical"/>
 
     <LinearLayout
         android:id="@+id/edit"
@@ -43,19 +43,7 @@
             android:drawableTint="#fff"
             android:gravity="center_vertical"
             android:padding="10dp"
-            android:text="Edit" />
-
-        <TextView
-            android:id="@+id/test"
-            android:layout_width="0dip"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:drawablePadding="5dp"
-            android:drawableStart="@drawable/ic_light_filled"
-            android:drawableTint="#fff"
-            android:gravity="center_vertical"
-            android:padding="10dp"
-            android:text="Test" />
+            android:text="Edit"/>
 
         <TextView
             android:id="@+id/delete"
@@ -67,7 +55,7 @@
             android:drawableTint="#fff"
             android:gravity="center_vertical"
             android:padding="10dp"
-            android:text="Delete" />
+            android:text="Delete"/>
 
         <TextView
             android:id="@+id/cancel"
@@ -79,7 +67,7 @@
             android:drawableTint="#fff"
             android:gravity="center_vertical"
             android:padding="10dp"
-            android:text="@android:string/cancel" />
+            android:text="@android:string/cancel"/>
     </LinearLayout>
 
 </android.support.v7.widget.CardView>

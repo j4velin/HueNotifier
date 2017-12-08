@@ -346,6 +346,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    static class LightSettings {
+        final int[] lights, colors;
+
+        private LightSettings(int[] lights, int[] colors) {
+            this.lights = lights;
+            this.colors = colors;
+        }
+    }
+
+    private LightSettings getLightSettings(List<CheckBox> checkBoxes) {
+        String lights = null;
+        String colors = null;
+        for (CheckBox cb : checkBoxes) {
+            if (cb.isChecked()) {
+                if (lights == null) {
+                    lights = String
+                            .valueOf(((int[]) cb.getTag())[0]);
+                    colors = String
+                            .valueOf(((int[]) cb.getTag())[1]);
+                } else {
+                    lights += "," + ((int[]) cb.getTag())[0];
+                    colors += "," + ((int[]) cb.getTag())[1];
+                }
+            }
+        }
+        return new LightSettings(Util.toIntArray(lights), Util.toIntArray(colors));
+    }
+
     private void showEditRuleDialog(final Rule rule) {
         final List<CheckBox> checkBoxes = new ArrayList<CheckBox>(lights.size());
 
@@ -391,7 +419,7 @@ public class MainActivity extends AppCompatActivity {
             tv.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    if(!cb.isChecked()) {
+                    if (!cb.isChecked()) {
                         cb.setChecked(true);
                     } else {
                         showColorPickerDialog(cb, tv, tag);
@@ -403,34 +431,37 @@ public class MainActivity extends AppCompatActivity {
             linearLayout.addView(cbLayout);
             checkBoxes.add(cb);
         }
+
+        v.findViewById(R.id.test).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(final View view) {
+                if (isConnected) {
+                    LightSettings lightSettings = getLightSettings(checkBoxes);
+                    startService(new Intent(MainActivity.this, ColorFlashService.class).
+                            putExtra("lights", lightSettings.lights)
+                            .putExtra("colors", lightSettings.colors)
+                            .putExtra("flashOnlyIfLightsOn", false));
+                } else {
+                    Snackbar.make(findViewById(android.R.id.content), R.string.not_connected,
+                            Snackbar.LENGTH_SHORT).show();
+                }
+            }
+        });
+
         new AlertDialog.Builder(MainActivity.this).setView(v).
                 setPositiveButton(android.R.string.ok,
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface,
                                                 int i) {
-                                String lights = null;
-                                String colors = null;
-                                for (CheckBox cb : checkBoxes) {
-                                    if (cb.isChecked()) {
-                                        if (lights == null) {
-                                            lights = String
-                                                    .valueOf(((int[]) cb.getTag())[0]);
-                                            colors = String
-                                                    .valueOf(((int[]) cb.getTag())[1]);
-                                        } else {
-                                            lights += "," + ((int[]) cb.getTag())[0];
-                                            colors += "," + ((int[]) cb.getTag())[1];
-                                        }
-                                    }
-                                }
+                                LightSettings lightSettings = getLightSettings(checkBoxes);
                                 dialogInterface.dismiss();
                                 Database db = Database.getInstance(MainActivity.this);
-                                if(db.contains(rule.appPkg)) {
+                                if (db.contains(rule.appPkg)) {
                                     db.delete(rule.appPkg, rule.person);
                                     rules.remove(rule);
                                 }
-                                db.insert(rule.appName, rule.appPkg, null, lights, colors);
+                                db.insert(rule.appName, rule.appPkg, null, lightSettings);
                                 rules.add(db.getRule(rule.appPkg, null));
                                 db.close();
                                 ruleAdapter.notifyDataSetChanged();
@@ -554,18 +585,18 @@ public class MainActivity extends AppCompatActivity {
             this.person = person;
         }
 
-        public int getColor(int lightId) {
-            for(int i = 0; i < lights.length; i++) {
-                if(lights[i] == lightId) {
+        int getColor(int lightId) {
+            for (int i = 0; i < lights.length; i++) {
+                if (lights[i] == lightId) {
                     return colors[i];
                 }
             }
             return Color.WHITE;
         }
 
-        public boolean contains(int lightId) {
-            for(int i = 0; i < lights.length; i++) {
-                if(lights[i] == lightId) {
+        boolean contains(int lightId) {
+            for (int i = 0; i < lights.length; i++) {
+                if (lights[i] == lightId) {
                     return true;
                 }
             }
@@ -600,24 +631,6 @@ public class MainActivity extends AppCompatActivity {
                 fadeView(false, editView);
             }
         };
-        private final View.OnClickListener testClickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                View editView = (View) view.getParent();
-                if (isConnected) {
-                    View cardView = (View) editView.getParent();
-                    final int itemPosition = ruleList.getChildLayoutPosition(cardView);
-                    startService(new Intent(MainActivity.this, ColorFlashService.class).
-                            putExtra("lights", rules.get(itemPosition).lights)
-                            .putExtra("colors", rules.get(itemPosition).colors)
-                            .putExtra("flashOnlyIfLightsOn", false));
-                } else {
-                    Snackbar.make(findViewById(android.R.id.content), R.string.not_connected,
-                            Snackbar.LENGTH_SHORT).show();
-                }
-                fadeView(false, editView);
-            }
-        };
         private final View.OnClickListener deleteClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -644,7 +657,6 @@ public class MainActivity extends AppCompatActivity {
             v.setOnClickListener(clickListener);
             ViewHolder holder = new ViewHolder(v);
             holder.edit.findViewById(R.id.configure).setOnClickListener(configureClickListener);
-            holder.edit.findViewById(R.id.test).setOnClickListener(testClickListener);
             holder.edit.findViewById(R.id.delete).setOnClickListener(deleteClickListener);
             holder.edit.findViewById(R.id.cancel).setOnClickListener(cancelClickListener);
             return holder;

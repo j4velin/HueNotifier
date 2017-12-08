@@ -55,8 +55,10 @@ public class ColorFlashService extends IntentService {
                 api = APIHelper.getAPI(prefs);
                 int[] colors = intent.getIntArrayExtra("colors");
                 int[] lights = intent.getIntArrayExtra("lights");
-                final boolean flashOnlyIfLightsOn = PreferenceManager.getDefaultSharedPreferences(
-                        this).getBoolean("flashOnlyIfLightsOn", false);
+                final boolean flashOnlyIfLightsOn = intent.hasExtra("flashOnlyIfLightsOn") ? intent
+                        .getBooleanExtra("flashOnlyIfLightsOn", false) : PreferenceManager
+                        .getDefaultSharedPreferences(
+                                this).getBoolean("flashOnlyIfLightsOn", false);
                 int size = Math.min(colors.length, lights.length);
                 for (int i = 0; i < size; i++) {
                     if (BuildConfig.DEBUG)
