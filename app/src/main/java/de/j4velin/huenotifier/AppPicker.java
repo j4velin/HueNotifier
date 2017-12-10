@@ -52,7 +52,7 @@ class AppPicker extends AsyncTask<Void, Integer, Void> {
 
     @Override
     protected void onPreExecute() {
-        progress = ProgressDialog.show(a, "", "Loading apps", true);
+        progress = ProgressDialog.show(a, "", a.getString(R.string.loading_apps), true);
         progress.setMax(1);
         progress.setCancelable(false);
     }

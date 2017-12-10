@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">Hue Notifier</string>
+    <string name="settings">Einstellungen</string>
+    <string name="no_bridge_found">Keine Hue Bridge gefunden</string>
+    <string name="select_bridge">Hue Bridge auswählen</string>
+    <string name="connection_lost">Verbindung verloren</string>
+    <string name="not_connected">Nicht verbunden</string>
+    <string name="could_not_get_lights">Lampen konnten nicht ausgelesen werden: %s</string>
+    <string name="searching_bridge">Suche Hue Bridge…</string>
+    <string name="permission_required">Du musst der App die Berechtigung erteilen, deine Benachrichtungen lesen zu können</string>
+    <string name="grant_access">Zugriff erteilen</string>
+    <string name="no_light_please_wait">Noch keine Lampen gefunden - bitte warten…</string>
+    <string name="auth">Bitte drücke den Authentifizierungs-Knopf auf deiner Hue Bridge um die Kommunikation mit der App zu erlauben</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="delete">Löschen</string>
+    <string name="preview">Vorschau</string>
+    <string name="person">Person:</string>
+    <string name="on_going">Ignoriere andauernde Benachrichtigungen</string>
+    <string name="low_priority">Ignore Benachrichtigungen mit geringer Priorität</string>
+    <string name="flash_only_when_on">Blinke nur, wenn Lampe bereits eingeschaltet ist</string>
+    <string name="loading_apps">Lade Apps</string>
+</resources>

@@ -18,4 +18,5 @@
     <string name="on_going">Ignore on-going notifications</string>
     <string name="low_priority">Ignore low priority notifications</string>
     <string name="flash_only_when_on">Flash notifications only if lights are already on</string>
+    <string name="loading_apps">Loading apps</string>
 </resources>
