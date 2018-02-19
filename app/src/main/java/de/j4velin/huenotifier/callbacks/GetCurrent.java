@@ -25,14 +25,19 @@ public class GetCurrent extends AbstractCallback<Light> {
     public void onResponse(Call<Light> call, Response<Light> response) {
         if (BuildConfig.DEBUG)
             Logger.log("current state: " + response.body());
-        final Light.LightState originalState = response.body().state;
-        if (!flashOnlyIfLightsOn || originalState.on) {
-            Light.LightState alertState = new Light.LightState();
-            alertState.on = true;
-            alertState.xy =
-                    PHUtilities.calculateXY(color, response.body().modelid);
-            service.getApi().setLightState(light, alertState).enqueue(
-                    new SetAlert(light, originalState, service));
+        if (response.isSuccessful()) {
+            final Light.LightState originalState = response.body().state;
+            if (!flashOnlyIfLightsOn || originalState.on) {
+                Light.LightState alertState = new Light.LightState();
+                alertState.on = true;
+                alertState.xy =
+                        PHUtilities.calculateXY(color, response.body().modelid);
+                service.getApi().setLightState(light, alertState).enqueue(
+                        new SetAlert(light, originalState, service));
+            }
+        } else if (BuildConfig.DEBUG) {
+            Logger.log("error getting current state: " + response.message() + " " + response
+                    .errorBody());
         }
     }
 }

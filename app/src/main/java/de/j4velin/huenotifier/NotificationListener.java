@@ -77,8 +77,9 @@ public class NotificationListener extends NotificationListenerService {
             }
             ConnectivityManager cm =
                     (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-            boolean isWiFi = activeNetwork.getType() == ConnectivityManager.TYPE_WIFI;
+            NetworkInfo activeNetwork = cm == null ? null : cm.getActiveNetworkInfo();
+            boolean isWiFi = activeNetwork != null && activeNetwork
+                    .getType() == ConnectivityManager.TYPE_WIFI;
             if (isWiFi) {
                 lastTime = current;
                 lastPackage = pkg;
