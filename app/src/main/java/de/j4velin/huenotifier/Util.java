@@ -39,6 +39,9 @@ abstract class Util {
     }
 
     static int[] toIntArray(final String csv) {
+        if (csv == null) {
+            return new int[0];
+        }
         String[] values = csv.split(",");
         int[] re = new int[values.length];
         for (int i = 0; i < values.length; i++) {

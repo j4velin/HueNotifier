@@ -52,6 +52,7 @@ import com.philips.lighting.hue.sdk.PHAccessPoint;
 import com.philips.lighting.hue.sdk.PHBridgeSearchManager;
 import com.philips.lighting.hue.sdk.PHHueSDK;
 import com.philips.lighting.hue.sdk.PHSDKListener;
+import com.philips.lighting.hue.sdk.exception.PHHueException;
 import com.philips.lighting.model.PHBridge;
 import com.philips.lighting.model.PHHueParsingError;
 
@@ -478,7 +479,14 @@ public class MainActivity extends AppCompatActivity {
             accessPoint.setIpAddress(prefs.getString("bridge_ip", null));
             accessPoint.setUsername(prefs.getString("username", null));
             if (!phHueSDK.isAccessPointConnected(accessPoint) || !isConnected) {
-                phHueSDK.connect(accessPoint);
+                try {
+                    phHueSDK.connect(accessPoint);
+                } catch (PHHueException e) {
+                    if (BuildConfig.DEBUG)
+                        Logger.log(e);
+                    Toast.makeText(this, "Can't connect to bridge: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }
