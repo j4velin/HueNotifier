@@ -34,10 +34,15 @@ public class GetCurrent extends AbstractCallback<Light> {
                         PHUtilities.calculateXY(color, response.body().modelid);
                 service.getApi().setLightState(light, alertState).enqueue(
                         new SetAlert(light, originalState, service));
+            } else {
+                if (BuildConfig.DEBUG)
+                    Logger.log("skip light as it is not currently on");
+                service.lightDone(light);
             }
         } else if (BuildConfig.DEBUG) {
             Logger.log("error getting current state: " + response.message() + " " + response
                     .errorBody());
+            service.lightDone(light);
         }
     }
 }
