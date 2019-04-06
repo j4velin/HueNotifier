@@ -127,9 +127,14 @@ class Database extends SQLiteOpenHelper {
         List<Rule> rules = new ArrayList<>(c.getCount());
         if (c.moveToFirst()) {
             do {
-                rules.add(
-                        new Rule(c.getString(0), c.getString(1), c.getString(2), new LightSettings(
-                                c.getString(3), c.getString(4))));
+                try {
+                    rules.add(
+                            new Rule(c.getString(0), c.getString(1), c.getString(2),
+                                    new LightSettings(
+                                            c.getString(3), c.getString(4))));
+                } catch (NumberFormatException nfe) {
+                    // ignore invalid entry
+                }
             } while (c.moveToNext());
         }
         c.close();
@@ -149,8 +154,13 @@ class Database extends SQLiteOpenHelper {
                         new String[]{pkg});
         Rule rule = null;
         if (c.moveToFirst()) {
-            rule = new Rule(c.getString(0), pkg, person, new LightSettings(
-                    c.getString(3), c.getString(4)));
+            LightSettings ls;
+            try {
+                ls = new LightSettings(c.getString(3), c.getString(4));
+            } catch (NumberFormatException nfe) {
+                ls = new LightSettings();
+            }
+            rule = new Rule(c.getString(0), pkg, person, ls);
         }
         c.close();
         return rule;
