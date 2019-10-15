@@ -57,7 +57,7 @@ public abstract class Logger {
             fw.write(date.toLocaleString() + " - " + msg + "\n");
             fw.flush();
         } catch (IOException e) {
-            e.printStackTrace();
+            android.util.Log.e(APP, e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 

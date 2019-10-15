@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 class Database extends SQLiteOpenHelper {
 
     final static String PATTERN_DELIMITER = "@";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
     private static final AtomicInteger openCounter = new AtomicInteger();
     private static Database instance;
 
@@ -63,6 +63,10 @@ class Database extends SQLiteOpenHelper {
         if (oldVersion == 1) {
             db.execSQL("ALTER TABLE apps ADD COLUMN person TEXT;");
         }
+        if (oldVersion == 1) {
+            // remove invalid rows
+            db.delete("apps", "lights='' OR colors=''", null);
+        }
     }
 
     boolean contains(final String pkg) {
@@ -73,9 +77,9 @@ class Database extends SQLiteOpenHelper {
         return re;
     }
 
-    long insert(final String name, final String pkg, final String person, final
-    LightSettings lightSettings) {
-        if (contains(pkg)) {
+    long insert(final String name, final String pkg, final String person,
+                final LightSettings lightSettings) {
+        if (contains(pkg) || lightSettings.colors.length == 0 || lightSettings.lights.length == 0) {
             return -1;
         }
         final ContentValues values = new ContentValues();
@@ -107,7 +111,8 @@ class Database extends SQLiteOpenHelper {
             }
         }
         c.close();
-        return re;
+        return re == null || re.startsWith(PATTERN_DELIMITER) || re.endsWith(
+                PATTERN_DELIMITER) ? null : re;
     }
 
     void delete(final String pkg, final String person) {

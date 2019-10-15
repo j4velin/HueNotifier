@@ -29,14 +29,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.content.PermissionChecker;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -48,6 +40,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.philips.lighting.hue.sdk.PHAccessPoint;
 import com.philips.lighting.hue.sdk.PHBridgeSearchManager;
 import com.philips.lighting.hue.sdk.PHHueSDK;
@@ -60,6 +54,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.PermissionChecker;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import de.j4velin.lib.colorpicker.ColorPickerDialog;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -92,6 +92,8 @@ public class MainActivity extends AppCompatActivity {
                         Snackbar.make(findViewById(android.R.id.content), R.string.no_bridge_found,
                                 Snackbar.LENGTH_LONG).show();
                     } else if (accessPoint.size() == 1) {
+                        if (BuildConfig.DEBUG)
+                            Logger.log("connecting to " + accessPoint.get(0).getIpAddress());
                         phHueSDK.connect(accessPoint.get(0));
                     } else {
                         LinearLayout linearLayout = new LinearLayout(MainActivity.this);
@@ -164,8 +166,7 @@ public class MainActivity extends AppCompatActivity {
                     connectDialog = new Dialog(MainActivity.this);
                     connectDialog.setCancelable(false);
                     connectDialog.setContentView(R.layout.pushlink);
-                    final ProgressBar pg = (ProgressBar) connectDialog
-                            .findViewById(R.id.progressBar);
+                    final ProgressBar pg = connectDialog.findViewById(R.id.progressBar);
                     connectDialog.show();
                     new Thread(new Runnable() {
                         @Override
@@ -296,7 +297,7 @@ public class MainActivity extends AppCompatActivity {
         rules = db.getRules();
         db.close();
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -304,7 +305,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        ruleList = (RecyclerView) findViewById(R.id.list);
+        ruleList = findViewById(R.id.list);
         ruleList.setHasFixedSize(false);
         ruleList.setLayoutManager(
                 new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
@@ -344,11 +345,11 @@ public class MainActivity extends AppCompatActivity {
         final List<CheckBox> checkBoxes = new ArrayList<CheckBox>(lights.size());
 
         View v = getLayoutInflater().inflate(R.layout.rule_add, null);
-        TextView appName = (TextView) v.findViewById(R.id.app);
+        TextView appName = v.findViewById(R.id.app);
         appName.setText(rule.appName);
 
-        TextView person = (TextView) v.findViewById(R.id.person);
-        Spinner people = (Spinner) v.findViewById(R.id.people);
+        TextView person = v.findViewById(R.id.person);
+        Spinner people = v.findViewById(R.id.people);
         if (Build.VERSION.SDK_INT >= 19 && BuildConfig.DEBUG) {
             // TODO: fill spinner
         } else {
@@ -356,7 +357,7 @@ public class MainActivity extends AppCompatActivity {
             people.setVisibility(View.GONE);
         }
 
-        LinearLayout linearLayout = (LinearLayout) v.findViewById(R.id.lights);
+        LinearLayout linearLayout = v.findViewById(R.id.lights);
 
         for (Map.Entry<String, Light> entry : lights.entrySet()) {
             Light light = entry.getValue();
@@ -418,17 +419,24 @@ public class MainActivity extends AppCompatActivity {
                 setPositiveButton(android.R.string.ok,
                         new DialogInterface.OnClickListener() {
                             @Override
-                            public void onClick(DialogInterface dialogInterface,
-                                                int i) {
+                            public void onClick(DialogInterface dialogInterface, int i) {
                                 LightSettings lightSettings = new LightSettings(checkBoxes);
+                                if (lightSettings.lights.length == 0 || lightSettings.colors.length == 0) {
+                                    Toast.makeText(MainActivity.this,
+                                            "No lights or colors selected!", Toast.LENGTH_SHORT)
+                                            .show();
+                                    return;
+                                }
                                 dialogInterface.dismiss();
                                 Database db = Database.getInstance(MainActivity.this);
                                 if (db.contains(rule.appPkg)) {
                                     db.delete(rule.appPkg, rule.person);
                                     rules.remove(rule);
                                 }
-                                db.insert(rule.appName, rule.appPkg, null, lightSettings);
-                                rules.add(db.getRule(rule.appPkg, null));
+                                if (db.insert(rule.appName, rule.appPkg, null,
+                                        lightSettings) >= 0) {
+                                    rules.add(db.getRule(rule.appPkg, null));
+                                }
                                 db.close();
                                 ruleAdapter.notifyDataSetChanged();
                             }
@@ -478,14 +486,18 @@ public class MainActivity extends AppCompatActivity {
             PHAccessPoint accessPoint = new PHAccessPoint();
             accessPoint.setIpAddress(prefs.getString("bridge_ip", null));
             accessPoint.setUsername(prefs.getString("username", null));
+            if (BuildConfig.DEBUG)
+                Logger.log("connecting to " + accessPoint.getIpAddress() + " as " + accessPoint
+                        .getUsername());
             if (!phHueSDK.isAccessPointConnected(accessPoint) || !isConnected) {
                 try {
                     phHueSDK.connect(accessPoint);
                 } catch (PHHueException e) {
                     if (BuildConfig.DEBUG)
                         Logger.log(e);
-                    Toast.makeText(this, "Can't connect to bridge: " + e.getMessage(),
-                            Toast.LENGTH_SHORT).show();
+                    Snackbar.make(findViewById(R.id.root),
+                            "Can't connect to bridge: " + e.getMessage(),
+                            Snackbar.LENGTH_SHORT).show();
                 }
             }
         }

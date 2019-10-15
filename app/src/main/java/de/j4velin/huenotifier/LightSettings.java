@@ -27,17 +27,25 @@ class LightSettings {
     LightSettings(List<CheckBox> checkBoxes) {
         String lights = null;
         String colors = null;
-        for (CheckBox cb : checkBoxes) {
-            if (cb.isChecked()) {
-                if (lights == null) {
-                    lights = String
-                            .valueOf(((int[]) cb.getTag())[0]);
-                    colors = String
-                            .valueOf(((int[]) cb.getTag())[1]);
-                } else {
-                    lights += "," + ((int[]) cb.getTag())[0];
-                    colors += "," + ((int[]) cb.getTag())[1];
+        try {
+            for (CheckBox cb : checkBoxes) {
+                if (cb.isChecked()) {
+                    if (lights == null) {
+                        lights = String
+                                .valueOf(((int[]) cb.getTag())[0]);
+                        colors = String
+                                .valueOf(((int[]) cb.getTag())[1]);
+                    } else {
+                        lights += "," + ((int[]) cb.getTag())[0];
+                        colors += "," + ((int[]) cb.getTag())[1];
+                    }
                 }
+            }
+        } catch (Exception e) {
+            if (BuildConfig.DEBUG) {
+                Logger.log(
+                        "Can not construct LightSettings: light=" + lights + ", colors=" + colors);
+                Logger.log(e);
             }
         }
         this.lights = Util.toIntArray(lights);
